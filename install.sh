@@ -509,16 +509,16 @@ Claude Code 工作流说明（补充 AGENTS.md）。
 所有功能变更通过 OpenSpec 状态机管理。禁止直接修改代码而不经过 propose 阶段。
 
 ### 工作流命令
-- `/wf` — 统一入口，选择模式（Mode 0-4）自动路由
-- `/openspec-propose` — 完整通道（proposal + design gate + tasks）
-- `/openspec-quick` — 快速通道（文案/样式/明确 bug，跳过 gate）
-- `/openspec-apply-change` — 执行 tasks 实现代码
-- `/openspec-archive-change` — 归档变更
+- \`/wf\` — 统一入口，选择模式（Mode 0-4）自动路由
+- \`/openspec-propose\` — 完整通道（proposal + design gate + tasks）
+- \`/openspec-quick\` — 快速通道（文案/样式/明确 bug，跳过 gate）
+- \`/openspec-apply-change\` — 执行 tasks 实现代码
+- \`/openspec-archive-change\` — 归档变更
 
 ### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
-- `/plan-eng-review` — 工程审查（完整通道必须）
-- `/cso` — 安全审查（涉及配置/凭证/外部调用时）
-- `/review` — 代码审查（apply 后运行）
+- \`/plan-eng-review\` — 工程审查（完整通道必须）
+- \`/cso\` — 安全审查（涉及配置/凭证/外部调用时）
+- \`/review\` — 代码审查（apply 后运行）
 
 ### Gate 规则
 见 openspec/config.yaml。design.md 顶部工程审查状态为「阻断」时，
@@ -571,16 +571,16 @@ if [[ -f "$TARGET_DIR/AGENTS.md" ]]; then
 所有功能变更通过 OpenSpec 状态机管理。禁止直接修改代码而不经过 propose 阶段。
 
 ### 工作流命令
-- `/openspec-propose` — 发起新变更（完整通道）
-- `/openspec-quick` — 快速通道（文案/样式/明确 bug，跳过 design gate）
-- `/openspec-apply-change` — 实现代码
-- `/openspec-archive-change` — 归档变更
-- `/openspec-explore` — 探索思考
+- \`/openspec-propose\` — 发起新变更（完整通道）
+- \`/openspec-quick\` — 快速通道（文案/样式/明确 bug，跳过 design gate）
+- \`/openspec-apply-change\` — 实现代码
+- \`/openspec-archive-change\` — 归档变更
+- \`/openspec-explore\` — 探索思考
 
 ### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
-- `/gstack-plan-eng-review` — 工程审查（完整通道必须）
-- `/gstack-cso` — 安全审查（涉及配置/凭证时必须）
-- `/gstack-review` — 代码审查（apply 后运行）
+- \`/gstack-plan-eng-review\` — 工程审查（完整通道必须）
+- \`/gstack-cso\` — 安全审查（涉及配置/凭证时必须）
+- \`/gstack-review\` — 代码审查（apply 后运行）
 
 ### Gate 规则
 见 openspec/config.yaml。design.md 顶部工程审查状态为「阻断」时，

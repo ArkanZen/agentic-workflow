@@ -1,4 +1,5 @@
 schema: spec-driven
+# arkan-workflow-tier: backend
 
 context: |
   完整项目上下文见 openspec/specs/project.md。

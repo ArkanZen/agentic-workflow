@@ -1,4 +1,5 @@
 # vibe 模式 — 轻量快速，适合个人项目、原型验证，无 design gate
+# arkan-workflow-tier: vibe
 
 schema: spec-driven
 

@@ -80,11 +80,11 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 
 #### 置信度换算
 
-将各档位权重归一化为百分比。若最高权重档位得分 ≥ 5，置信度 ≥ 80%；得分 3–4，置信度约 60%；得分 1–2，置信度约 40%。无任何强信号时，vibe 作为兜底候选（置信度 30%）。
+若最高权重档位得分 ≥ 5，置信度 ≥ 80%；得分 3–4，置信度约 60%；得分 1–2，置信度约 40%。无任何强信号时，vibe 作为兜底候选（置信度 30%）。
 
 ### 步骤 3：展示推荐结果，请用户确认
 
-按置信度从高到低排列，用 AskUserQuestion 展示（★ 标记仅用于顶级推荐，其他候选项不显示 ★ 但仍按置信度排序）：
+展示所有置信度 > 0 的候选档位，按置信度降序排列，用 AskUserQuestion 展示（★ 标记仅用于顶级推荐）：
 
 ```
 检测完成，以下是档位推荐（按置信度排序）：
@@ -112,8 +112,12 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 
 然后执行安装：
 
+在执行前验证路径：test -f "<arkan-workflow-path>/install.sh"
+若文件不存在，告知用户「路径无效，未找到 install.sh」，重新询问路径。
+确保路径在 bash 命令中用引号包裹，以处理含空格的路径。
+
 ```bash
-bash <arkan-workflow-path>/install.sh --type <tier> --target <current-dir> --no-interactive
+bash "<arkan-workflow-path>/install.sh" --type <tier> --target <current-dir> --no-interactive
 ```
 
 其中 `<current-dir>` 为当前工作目录的绝对路径，用 `pwd` 获取。
@@ -152,14 +156,18 @@ done
 
 ### 步骤 2：读取当前档位
 
-用 Read 工具读取 `openspec/config.yaml` 的前 5 行，识别当前档位（从文件注释或 schema 字段推断）。
-若无法从 config.yaml 直接读取档位标识，可用：
+用 grep 读取 openspec/config.yaml 第2行的 arkan-workflow-tier 注释：
+  grep "arkan-workflow-tier:" openspec/config.yaml
+  例如输出：# arkan-workflow-tier: backend → 当前档位为 backend
+  若该注释不存在，显示「当前档位：未知」
 
-```bash
-grep -r "tier\|档位\|type" openspec/config.yaml | head -5
-```
+### 步骤 3：获取 arkan-workflow 路径
 
-### 步骤 3：展示档位选择
+若尚未知道 arkan-workflow 的本地路径，询问用户：
+「arkan-workflow 仓库在哪里？（输入路径，例：~/projects/arkan-workflow）」
+在执行前用 `test -f <path>/install.sh` 验证路径有效，若无效则提示重新输入。
+
+### 步骤 4：展示档位选择
 
 用 AskUserQuestion 展示所有 5 个档位：
 
@@ -178,7 +186,7 @@ grep -r "tier\|档位\|type" openspec/config.yaml | head -5
 （当前：<current-tier-name>，再次选择当前档位不会修改文件）
 ```
 
-### 步骤 4：替换 config.yaml
+### 步骤 5：替换 config.yaml
 
 用户选择目标档位后：
 

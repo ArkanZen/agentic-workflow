@@ -1,4 +1,5 @@
 schema: spec-driven
+# arkan-workflow-tier: python-data
 
 context: |
   本项目为 Python 数据/报表类项目。openspec/specs/project.md 含完整上下文。

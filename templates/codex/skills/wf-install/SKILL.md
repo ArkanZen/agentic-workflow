@@ -2,7 +2,7 @@
 name: wf-install
 description: |
   工作流档位安装/切换。AI 分析项目信号推荐档位，支持全新安装、档位切换。
-  3 种模式：INSTALL（全新安装）/ SWITCH（切换档位）。
+  2 种模式：INSTALL（全新安装）/ SWITCH（切换档位）。
   触发词：wf-install、安装工作流、切换档位、install workflow。
 ---
 
@@ -83,11 +83,11 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 
 #### 置信度换算
 
-将各档位权重归一化为百分比。若最高权重档位得分 ≥ 5，置信度 ≥ 80%；得分 3–4，置信度约 60%；得分 1–2，置信度约 40%。无任何强信号时，vibe 作为兜底候选（置信度 30%）。
+若最高权重档位得分 ≥ 5，置信度 ≥ 80%；得分 3–4，置信度约 60%；得分 1–2，置信度约 40%。无任何强信号时，vibe 作为兜底候选（置信度 30%）。
 
 ### 步骤 3：展示推荐结果，请用户确认
 
-按置信度从高到低排列，展示推荐（★ 标记仅用于顶级推荐，其他候选项不显示 ★ 但仍按置信度排序）：
+展示所有置信度 > 0 的候选档位，按置信度降序排列（★ 标记仅用于顶级推荐）：
 
 ```
 检测完成，以下是档位推荐（按置信度排序）：
@@ -115,8 +115,12 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 
 然后执行安装：
 
+在执行前验证路径：test -f "<arkan-workflow-path>/install.sh"
+若文件不存在，告知用户「路径无效，未找到 install.sh」，重新询问路径。
+确保路径在 bash 命令中用引号包裹，以处理含空格的路径。
+
 ```bash
-bash <arkan-workflow-path>/install.sh --type <tier> --target <current-dir> --no-interactive
+bash "<arkan-workflow-path>/install.sh" --type <tier> --target <current-dir> --no-interactive
 ```
 
 其中 `<current-dir>` 为当前工作目录的绝对路径，用 `pwd` 获取。
@@ -149,14 +153,23 @@ done
 
 等待用户回复。若用户回复 `n` 或 `N` 或直接回车，中止操作，提示：
 ```
-已取消。请先归档完成的变更后再切换档位。
+已取消。请先运行 /openspec-archive-change 归档完成的变更。
 ```
 
 ### 步骤 2：读取当前档位
 
-读取 `openspec/config.yaml` 的前 5 行，识别当前档位（从文件注释或 schema 字段推断）。
+用 grep 读取 openspec/config.yaml 第2行的 arkan-workflow-tier 注释：
+  grep "arkan-workflow-tier:" openspec/config.yaml
+  例如输出：# arkan-workflow-tier: backend → 当前档位为 backend
+  若该注释不存在，显示「当前档位：未知」
 
-### 步骤 3：展示档位选择
+### 步骤 3：获取 arkan-workflow 路径
+
+若尚未知道 arkan-workflow 的本地路径，询问用户：
+「arkan-workflow 仓库在哪里？（输入路径，例：~/projects/arkan-workflow）」
+在执行前用 `test -f <path>/install.sh` 验证路径有效，若无效则提示重新输入。
+
+### 步骤 4：展示档位选择
 
 展示所有 5 个档位供选择：
 
@@ -175,7 +188,7 @@ done
 （当前：<current-tier-name>，再次选择当前档位不会修改文件）
 ```
 
-### 步骤 4：替换 config.yaml
+### 步骤 5：替换 config.yaml
 
 用户选择目标档位后：
 

@@ -1,4 +1,5 @@
 schema: spec-driven
+# arkan-workflow-tier: fullstack
 
 context: |
   本项目为前后端合体（fullstack）项目，openspec/specs/ 下含 frontend/ 和 backend/ 子目录。

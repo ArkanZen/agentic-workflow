@@ -534,36 +534,16 @@ Rules:
 `jq -nc` so titles and source findings containing quotes, newlines, or
 backslashes serialize cleanly — never use hand-rolled `echo` / `printf`.
 
-```bash
-eval "$(~/.hermes/skills/gstack/bin/gstack-slug 2>/dev/null)"
-TASKS_DIR="${HOME}/.gstack/projects/${SLUG:-unknown}"
-mkdir -p "$TASKS_DIR"
-TASKS_FILE="$TASKS_DIR/tasks-eng-review-$(date +%Y%m%d-%H%M%S).jsonl"
-COMMIT=$(git rev-parse HEAD 2>/dev/null || echo unknown)
-BRANCH=$(git branch --show-current 2>/dev/null || echo unknown)
-RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+（跳过：gstack-slug / gstack projects 目录在 Codex 中不可用。
+将审查发现的任务汇总写入当前变更的 design.md 底部，格式如下：
 
-# Repeat ONE jq invocation per task identified during this review.
-# Substitute the placeholders inline with shell variables you set per task:
-#   TASK_ID (T1, T2, ...), PRIORITY (P1/P2/P3), COMPONENT, TITLE,
-#   SOURCE_FINDING, EFFORT_HUMAN, EFFORT_CC, FILES_JSON (a JSON array literal
-#   like '["browse/src/sanitize.ts","browse/src/server.ts"]').
-jq -nc \
-  --arg phase 'eng-review' \
-  --arg run_id "$RUN_ID" \
-  --arg branch "$BRANCH" \
-  --arg commit "$COMMIT" \
-  --arg id "$TASK_ID" \
-  --arg priority "$PRIORITY" \
-  --arg component "$COMPONENT" \
-  --arg effort_human "$EFFORT_HUMAN" \
-  --arg effort_cc "$EFFORT_CC" \
-  --arg title "$TITLE" \
-  --arg source_finding "$SOURCE_FINDING" \
-  --argjson files "$FILES_JSON" \
-  '{phase:$phase, run_id:$run_id, branch:$branch, commit:$commit, id:$id, priority:$priority, component:$component, files:$files, effort_human:$effort_human, effort_cc:$effort_cc, title:$title, source_finding:$source_finding}' \
-  >> "$TASKS_FILE"
 ```
+## 审查任务列表
+| ID | 优先级 | 组件 | 描述 |
+|----|--------|------|------|
+| T1 | P1 | ... | ... |
+```
+）
 
 If `jq` is not installed, fall back to skipping the JSONL write and warn
 the user to install jq for autoplan aggregation. Never hand-roll JSONL.
@@ -762,9 +742,11 @@ there — the user then sees a plan whose review report is not at the bottom and
 If you discovered a non-obvious pattern, pitfall, or architectural insight during
 this session, log it for future sessions:
 
-```bash
-$GSTACK_BIN/gstack-learnings-log '{"skill":"plan-eng-review","type":"TYPE","key":"SHORT_KEY","insight":"DESCRIPTION","confidence":N,"source":"SOURCE","files":["path/to/relevant/file"]}'
-```
+（跳过：gstack-learnings-log 在 Codex 中不可用。
+将学习要点写入 design.md 末尾或项目的 AGENTS.md，格式示例：
+- 模式：[简短描述，例如 "FC 部署须先 OSS 上传"]
+- 陷阱：[简短描述]
+）
 
 **Types:** `pattern` (reusable approach), `pitfall` (what NOT to do), `preference`
 (user stated), `architecture` (structural decision), `tool` (library/framework insight),

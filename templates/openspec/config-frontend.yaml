@@ -1,5 +1,6 @@
 schema: spec-driven
 # arkan-workflow-tier: frontend
+# arkan-workflow-version: 1.0
 
 context: |
   完整项目上下文见 openspec/specs/project.md。
@@ -47,5 +48,6 @@ rules:
       关卡检查：读取 design.md 顶部的工程审查关卡，确认状态为「通过」或「仅警告」。
       若状态为「阻断」或关卡章节缺失，立即停止并输出：
       「阻断：设计关卡未通过，请先修改提案。」
+    - 若 design.md 顶部含「UI 设计审查」关卡，须在生成第一个 task 之前确认该关卡状态为「通过」或「仅警告」，否则中止并要求完成 UI 设计审查。
     - 每个任务的实现工作量控制在 2–3 小时以内。
     - 每个任务须注明它实现的是哪个 spec 章节。

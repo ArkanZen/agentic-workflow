@@ -10,16 +10,44 @@ description: |
 
 ## 第一步：检测当前状态，路由到对应模式
 
-运行 shell 命令检查 `openspec/config.yaml` 是否存在：
+运行 shell 命令检查 `openspec/config.yaml` 是否存在，并读取版本标记：
 
 ```bash
 test -f openspec/config.yaml && echo "EXISTS" || echo "NOT_FOUND"
+grep "arkan-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VERSION"
 ```
 
+路由规则：
 - 若文件**不存在** → 进入 **INSTALL 模式**
-- 若文件**存在** → 进入 **SWITCH 模式**
+- 若文件**存在** AND 含 `arkan-workflow-version:` 注释 → 进入 **SWITCH 模式**
+- 若文件**存在** AND **不含** `arkan-workflow-version:` 注释 → 进入 **UPGRADE 模式**
 
 > Codex 注意：使用 shell 工具执行命令；读取文件用文件读取工具；向用户提问用 AskUserQuestion 或等价的交互工具。
+
+---
+
+## UPGRADE 模式（更新旧版配置）
+
+检测到 `openspec/config.yaml` 存在但缺少版本标记，说明工作流是在引入版本跟踪之前安装的。
+
+展示以下提示（用 AskUserQuestion）：
+```
+检测到旧版工作流配置（无版本标记）。
+
+选项：
+1. 升级配置 — 重新运行 install.sh 覆盖 config.yaml（推荐）
+2. 切换档位 — 直接切换到其他档位（跳过升级，进入 SWITCH 模式）
+3. 取消
+```
+
+若用户选择「升级配置」：
+- 询问 arkan-workflow 仓库路径（同 INSTALL 模式步骤 4），然后执行：
+  ```bash
+  bash "<arkan-workflow-path>/install.sh" --type <detected-or-asked-tier> --target <current-dir> --no-interactive
+  ```
+  其中档位通过 `grep "arkan-workflow-tier:" openspec/config.yaml` 读取当前档位。
+
+若用户选择「切换档位」：进入 **SWITCH 模式**。
 
 ---
 
@@ -74,6 +102,7 @@ head -30 README.md 2>/dev/null || head -30 README 2>/dev/null
 | 条件 | 结果 |
 |------|------|
 | `app/dao/` AND `app/service/` 目录存在 | backend 权重 +1 |
+| `src/components/` 目录存在 | frontend 权重 +1 |
 | `tests/` 目录**不存在** AND 文件总数 < 50 | vibe 权重 +1 |
 | `.github/workflows/` 目录**不存在** | vibe 权重 +1 |
 
@@ -103,7 +132,7 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 3. 取消
 ```
 
-若用户选择"查看全部 5 个档位"，展示完整列表（同 SWITCH 模式第一步）。
+若用户选择"查看全部 5 个档位"，展示完整列表（同 SWITCH 模式步骤 4）。
 
 ### 步骤 4：执行安装
 
@@ -201,7 +230,11 @@ done
    ```bash
    cp <arkan-workflow-path>/templates/openspec/config-<tier>.yaml openspec/config.yaml
    ```
-4. 输出：
+4. 若目标档位为 `fullstack`，额外创建目录：
+   ```bash
+   mkdir -p openspec/specs/frontend openspec/specs/backend
+   ```
+5. 输出：
    ```
    ✓ 已切换到 <tier-name> 档位。原配置已备份为 openspec/config.yaml.bak。
    ⚠ 注意：config.yaml 已更新，如有自定义规则请手动迁移。

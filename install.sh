@@ -86,6 +86,9 @@ echo ""
 # 第一步：目标项目目录
 # ══════════════════════════════════════════════════════════════════════════════
 step "目标项目"
+if [[ "$NO_INTERACTIVE" == "true" && -z "$ARG_TARGET" ]]; then
+  err "--no-interactive 模式需要 --target 参数"; exit 1
+fi
 if [[ -n "$ARG_TARGET" ]]; then
   TARGET_DIR="$(realpath "$ARG_TARGET")"
   info "目标目录: $TARGET_DIR"
@@ -150,8 +153,22 @@ if [[ "$SWITCH_MODE" == "true" ]]; then
     backend)     new_tmpl="$TEMPLATES/openspec/config-backend.yaml"     ;;
     *) err "未知档位: $ARG_TYPE"; exit 1 ;;
   esac
+  cp "$TARGET_DIR/openspec/config.yaml" "$TARGET_DIR/openspec/config.yaml.bak"
+  ok "config.yaml 已备份为 config.yaml.bak"
   cp "$new_tmpl" "$TARGET_DIR/openspec/config.yaml"
   ok "档位已切换到: $ARG_TYPE"
+  # 更新 .claude/CLAUDE.md 中的档位注释
+  if [[ -f "$TARGET_DIR/.claude/CLAUDE.md" ]]; then
+    sed -i.bak "s|^# arkan-workflow-tier: .*|# arkan-workflow-tier: ${ARG_TYPE}|" "$TARGET_DIR/.claude/CLAUDE.md"
+    rm -f "$TARGET_DIR/.claude/CLAUDE.md.bak"
+    ok ".claude/CLAUDE.md 档位注释已更新"
+  fi
+  # 更新 AGENTS.md 中的档位注释
+  if [[ -f "$TARGET_DIR/AGENTS.md" ]]; then
+    sed -i.bak "s|<!-- arkan-workflow-tier: .* -->|<!-- arkan-workflow-tier: ${ARG_TYPE} -->|" "$TARGET_DIR/AGENTS.md"
+    rm -f "$TARGET_DIR/AGENTS.md.bak"
+    ok "AGENTS.md 档位注释已更新"
+  fi
   if [[ "$ARG_TYPE" == "fullstack" ]]; then
     mkdir -p "$TARGET_DIR/openspec/specs/frontend" "$TARGET_DIR/openspec/specs/backend"
     ok "openspec/specs/frontend/ 和 backend/（已创建）"
@@ -481,8 +498,9 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
 
   if [[ ! -f "$TARGET_DIR/.claude/CLAUDE.md" ]]; then
     mkdir -p "$TARGET_DIR/.claude"
-    cat > "$TARGET_DIR/.claude/CLAUDE.md" << 'CLAUDEMD'
+    cat > "$TARGET_DIR/.claude/CLAUDE.md" << CLAUDEMD
 # CLAUDE.md
+# arkan-workflow-tier: ${PROJECT_TYPE}
 
 Claude Code 工作流说明（补充 AGENTS.md）。
 
@@ -545,9 +563,10 @@ if [[ -f "$TARGET_DIR/AGENTS.md" ]]; then
     info "AGENTS.md 已含工作流段落（跳过）"
     SKIPPED+=("AGENTS.md workflow section")
   else
-    cat >> "$TARGET_DIR/AGENTS.md" << 'AGENTSECTION'
+    cat >> "$TARGET_DIR/AGENTS.md" << AGENTSECTION
 
 ## OpenSpec + GStack 工作流
+<!-- arkan-workflow-tier: ${PROJECT_TYPE} -->
 
 所有功能变更通过 OpenSpec 状态机管理。禁止直接修改代码而不经过 propose 阶段。
 

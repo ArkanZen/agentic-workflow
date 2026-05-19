@@ -6,7 +6,7 @@ context: |
   本项目为前后端合体（fullstack）项目，openspec/specs/ 下含 frontend/ 和 backend/ 子目录。
   AI 生成工件时须区分前后端影响范围。完整上下文见 openspec/specs/project.md。
 
-# 快速通道判定标准（满足以下全部条件时可用 /openspec-quick 跳过 design gate）
+# 快速通道判定标准（满足以下全部条件时可用 /wf-quick 跳过 design gate）
 quick_change_criteria: |
   以下情形均可走快速通道（缺一不可）：
   1. 改动范围 ≤ 3 个文件

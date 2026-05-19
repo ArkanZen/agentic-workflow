@@ -189,7 +189,7 @@ step "安装配置"
 if [[ -n "$ARG_TYPE" ]]; then
   case "$ARG_TYPE" in
     backend|python-data|frontend|fullstack|vibe) ;;
-    *) err "未知档位: $ARG_TYPE（有效值：backend, python-data, frontend, fullstack, vibe）"; exit 1 ;;
+    *) err "未知档位: ${ARG_TYPE}（有效值：backend, python-data, frontend, fullstack, vibe）"; exit 1 ;;
   esac
   PROJECT_TYPE="$ARG_TYPE"
   ok "项目类型: ${PROJECT_TYPE}（来自参数）"
@@ -239,6 +239,19 @@ fi
 # ══════════════════════════════════════════════════════════════════════════════
 step "环境检查（软）"
 SOFT_WARN=false
+CLAUDE_SUPERPOWERS_INSTALLED=false
+CODEX_SUPERPOWERS_INSTALLED=false
+CLAUDE_GSTACK_INSTALLED=false
+CODEX_GSTACK_INSTALLED=false
+
+[[ -d "$HOME/.claude/plugins/cache/claude-plugins-official/superpowers" ]] && CLAUDE_SUPERPOWERS_INSTALLED=true
+if compgen -G "$HOME/.codex/plugins/cache/openai-curated/superpowers/*" >/dev/null; then
+  CODEX_SUPERPOWERS_INSTALLED=true
+fi
+[[ -d "$HOME/.claude/skills/gstack" || -d "$HOME/.gstack/repos/gstack" ]] && CLAUDE_GSTACK_INSTALLED=true
+if [[ -d "$HOME/.codex/skills/gstack" ]] || compgen -G "$HOME/.codex/skills/gstack-*" >/dev/null; then
+  CODEX_GSTACK_INSTALLED=true
+fi
 
 if [[ "$INSTALL_CLAUDE" == "true" ]]; then
   if command -v claude &>/dev/null; then
@@ -248,23 +261,23 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
     SOFT_WARN=true
   fi
 
-  if [[ -d "$HOME/.gstack/repos/gstack/.hermes/skills" ]]; then
-    ok "GStack 已安装 (~/.gstack)"
+  if [[ "$CLAUDE_GSTACK_INSTALLED" == "true" ]]; then
+    ok "Claude Code GStack 已安装"
   else
-    warn "GStack 未安装（~/.gstack 不存在）"
-    info "Claude Code 侧原生 GStack skill 不可用，移植版 Codex skill 不受影响"
-    info "安装 GStack: https://gstack.dev"
+    warn "Claude Code GStack 未安装（不阻塞安装，GStack 审查命令不可用）"
+    info "官方安装：git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup"
     SOFT_WARN=true
   fi
 
-  if [[ -d "$HOME/.claude/plugins/cache/claude-plugins-official/superpowers" ]]; then
+  if [[ "$CLAUDE_SUPERPOWERS_INSTALLED" == "true" ]]; then
     ok "Superpowers 插件已安装"
   else
-    warn "Superpowers 未安装"
-    info "/wf Mode 2（复杂后端）和 Mode 3（Debug/重构/单测）依赖以下 skill："
+    warn "Superpowers 插件未安装（不阻塞安装，复杂/Debug 模式会降级）"
+    info "影响范围：/wf-complex 和 /wf-debug 无法调用完整 Superpowers skill，只能按模板方法论执行"
+    info "建议安装：在 Claude Code 中运行 /plugins install superpowers"
+    info "依赖的 Superpowers skill："
     info "  brainstorming / writing-plans / verification-before-completion"
     info "  systematic-debugging / test-driven-development"
-    info "安装方法：Claude Code 中运行 /plugins install superpowers"
     SOFT_WARN=true
   fi
 fi
@@ -277,6 +290,24 @@ if [[ "$INSTALL_CODEX" == "true" ]]; then
   else
     warn "未检测到 Codex App（codex 命令不在 PATH，且 .codex/ 不存在）"
     info "Codex skills 仍会安装，Codex App 启动后即可识别"
+    SOFT_WARN=true
+  fi
+
+  if [[ "$CODEX_SUPERPOWERS_INSTALLED" == "true" ]]; then
+    ok "Codex Superpowers 插件已安装"
+  else
+    warn "Codex Superpowers 插件未安装（不阻塞安装，复杂/Debug 模式会降级）"
+    info "提示：如需 /wf-complex 和 /wf-debug 的完整 Superpowers 体验，请在当前环境安装 Superpowers 插件"
+    info "安装方式：在 Codex 插件/工具面板中安装 Superpowers；若使用 Claude Code，则运行 /plugins install superpowers"
+    SOFT_WARN=true
+  fi
+
+  if [[ "$CODEX_GSTACK_INSTALLED" == "true" ]]; then
+    ok "官方 GStack Codex skills 已安装"
+  else
+    warn "官方 GStack Codex skills 未安装（不阻塞安装，GStack 审查命令不可用）"
+    info "官方安装：git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.codex/skills/gstack"
+    info "然后运行：cd ~/.codex/skills/gstack && ./setup --host codex"
     SOFT_WARN=true
   fi
 fi
@@ -309,11 +340,11 @@ else
   ok "全新安装"
 fi
 
-[[ -f "$TARGET_DIR/.claude/commands/wf.md" ]]          && EXISTING_CLAUDE_COMMANDS=true
-[[ -d "$TARGET_DIR/.codex/skills/gstack-plan-eng-review" ]] && EXISTING_CODEX_SKILLS=true
+[[ -f "$TARGET_DIR/.claude/commands/wf-quick.md" ]]    && EXISTING_CLAUDE_COMMANDS=true
+[[ -d "$TARGET_DIR/.codex/skills/wf-quick" ]] && EXISTING_CODEX_SKILLS=true
 
 [[ "$EXISTING_CLAUDE_COMMANDS" == "true" ]] && warn "已有 Claude 工作流命令（将提示覆盖）"
-[[ "$EXISTING_CODEX_SKILLS"   == "true" ]] && warn "已有 Codex GStack skill（将提示覆盖）"
+[[ "$EXISTING_CODEX_SKILLS"   == "true" ]] && warn "已有 Codex 工作流 skill（将提示覆盖）"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 第六步：确认安装计划
@@ -323,12 +354,10 @@ echo ""
 echo -e "  将在 ${BOLD}$TARGET_DIR${RESET} 安装："
 echo -e "    • openspec/config.yaml（$PROJECT_TYPE 模板）"
 echo -e "    • openspec/specs/project.md 和 system.md（如不存在则创建 stub）"
-[[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/commands/wf.md + openspec-quick.md + wf-install.md"
+[[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/commands/wf-{quick,small,complex,debug,plan}.md + wf-install.md"
 [[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/CLAUDE.md（如不存在则创建）"
-[[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • .codex/skills/wf/ + openspec-quick/ + wf-install/ + gstack-plan-eng-review/"
-[[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • .codex/skills/gstack-cso/ + gstack-review/"
-[[ "$PROJECT_TYPE"   == "frontend" || "$PROJECT_TYPE" == "fullstack" ]] && [[ "$INSTALL_CODEX" == "true" ]] && \
-  echo -e "    • .codex/skills/gstack-plan-design-review/（前端/全栈专属）"
+[[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • .codex/skills/wf-{quick,small,complex,debug,plan}/ + wf-install/"
+[[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • 检测官方 GStack Codex skills（未安装则提示官方安装命令，不复制旧版内置 GStack skills）"
 echo -e "    • AGENTS.md 追加 workflow 段落（如不存在则跳过）"
 echo ""
 
@@ -354,14 +383,14 @@ copy_file() {
   mkdir -p "$(dirname "$dest")"
   if [[ -f "$dest" ]]; then
     if [[ "$NO_INTERACTIVE" == "true" ]]; then
-      info "$label（已跳过，文件已存在）"
+      info "${label}（已跳过，文件已存在）"
       SKIPPED+=("$label")
     elif ask_yn "  已存在 $label，覆盖?" "n"; then
       cp "$src" "$dest"
-      ok "$label（已更新）"
+      ok "${label}（已更新）"
       INSTALLED+=("$label")
     else
-      info "$label（跳过）"
+      info "${label}（跳过）"
       SKIPPED+=("$label")
     fi
   else
@@ -376,21 +405,36 @@ copy_dir() {
   local src="$1" dest="$2" label="$3"
   if [[ -d "$dest" ]]; then
     if [[ "$NO_INTERACTIVE" == "true" ]]; then
-      info "$label（已跳过，目录已存在）"
+      info "${label}（已跳过，目录已存在）"
       SKIPPED+=("$label")
     elif ask_yn "  已存在 $label，覆盖?" "n"; then
       rm -rf "$dest"
       cp -r "$src" "$dest"
-      ok "$label（已更新）"
+      ok "${label}（已更新）"
       INSTALLED+=("$label")
     else
-      info "$label（跳过）"
+      info "${label}（跳过）"
       SKIPPED+=("$label")
     fi
   else
     cp -r "$src" "$dest"
     ok "$label"
     INSTALLED+=("$label")
+  fi
+}
+
+# 辅助：移除已废弃入口，避免旧命令和新命令同时出现造成误用
+remove_obsolete_path() {
+  local path="$1" label="$2"
+  if [[ -e "$path" ]]; then
+    if [[ "$NO_INTERACTIVE" == "true" ]] || ask_yn "  检测到已废弃的 $label，删除?" "y"; then
+      rm -rf "$path"
+      ok "${label}（已删除）"
+      INSTALLED+=("${label} removed")
+    else
+      info "${label}（保留）"
+      SKIPPED+=("$label")
+    fi
   fi
 }
 
@@ -489,10 +533,19 @@ fi
 
 # — Claude Code ────────────────────────────────────────────────────────────────
 if [[ "$INSTALL_CLAUDE" == "true" ]]; then
-  copy_file "$TEMPLATES/claude/commands/wf.md" \
-    "$TARGET_DIR/.claude/commands/wf.md" ".claude/commands/wf.md"
-  copy_file "$TEMPLATES/claude/commands/openspec-quick.md" \
-    "$TARGET_DIR/.claude/commands/openspec-quick.md" ".claude/commands/openspec-quick.md"
+  remove_obsolete_path "$TARGET_DIR/.claude/commands/wf.md" ".claude/commands/wf.md"
+  remove_obsolete_path "$TARGET_DIR/.claude/commands/openspec-quick.md" ".claude/commands/openspec-quick.md"
+
+  copy_file "$TEMPLATES/claude/commands/wf-quick.md" \
+    "$TARGET_DIR/.claude/commands/wf-quick.md" ".claude/commands/wf-quick.md"
+  copy_file "$TEMPLATES/claude/commands/wf-small.md" \
+    "$TARGET_DIR/.claude/commands/wf-small.md" ".claude/commands/wf-small.md"
+  copy_file "$TEMPLATES/claude/commands/wf-complex.md" \
+    "$TARGET_DIR/.claude/commands/wf-complex.md" ".claude/commands/wf-complex.md"
+  copy_file "$TEMPLATES/claude/commands/wf-debug.md" \
+    "$TARGET_DIR/.claude/commands/wf-debug.md" ".claude/commands/wf-debug.md"
+  copy_file "$TEMPLATES/claude/commands/wf-plan.md" \
+    "$TARGET_DIR/.claude/commands/wf-plan.md" ".claude/commands/wf-plan.md"
   copy_file "$TEMPLATES/claude/commands/wf-install.md" \
     "$TARGET_DIR/.claude/commands/wf-install.md" ".claude/commands/wf-install.md"
 
@@ -509,13 +562,19 @@ Claude Code 工作流说明（补充 AGENTS.md）。
 所有功能变更通过 OpenSpec 状态机管理。禁止直接修改代码而不经过 propose 阶段。
 
 ### 工作流命令
-- \`/wf\` — 统一入口，选择模式（Mode 0-4）自动路由
+- \`/wf-quick\` — 快速通道（文案/样式/明确 bug，跳过 gate）
+- \`/wf-small\` — 小需求完整通道（OpenSpec + Gate）
+- \`/wf-complex\` — 复杂后端/架构变更（探索 + OpenSpec + Gate）
+- \`/wf-debug\` — Debug / 重构 / 单测（直接排查或实现）
+- \`/wf-plan\` — 产品/架构方案（先评估是否值得做）
 - \`/openspec-propose\` — 完整通道（proposal + design gate + tasks）
-- \`/openspec-quick\` — 快速通道（文案/样式/明确 bug，跳过 gate）
 - \`/openspec-apply-change\` — 执行 tasks 实现代码
 - \`/openspec-archive-change\` — 归档变更
 
 ### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
+需先安装官方 GStack。Claude Code 安装方式：
+\`git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup\`
+
 - \`/plan-eng-review\` — 工程审查（完整通道必须）
 - \`/cso\` — 安全审查（涉及配置/凭证/外部调用时）
 - \`/review\` — 代码审查（apply 后运行）
@@ -536,25 +595,25 @@ fi
 if [[ "$INSTALL_CODEX" == "true" ]]; then
   mkdir -p "$TARGET_DIR/.codex/skills"
 
-  copy_dir "$TEMPLATES/codex/skills/wf" \
-    "$TARGET_DIR/.codex/skills/wf" ".codex/skills/wf"
-  copy_dir "$TEMPLATES/codex/skills/openspec-quick" \
-    "$TARGET_DIR/.codex/skills/openspec-quick" ".codex/skills/openspec-quick"
+  remove_obsolete_path "$TARGET_DIR/.codex/skills/wf" ".codex/skills/wf"
+  remove_obsolete_path "$TARGET_DIR/.codex/skills/openspec-quick" ".codex/skills/openspec-quick"
+  remove_obsolete_path "$TARGET_DIR/.codex/skills/gstack-plan-eng-review" ".codex/skills/gstack-plan-eng-review"
+  remove_obsolete_path "$TARGET_DIR/.codex/skills/gstack-plan-design-review" ".codex/skills/gstack-plan-design-review"
+  remove_obsolete_path "$TARGET_DIR/.codex/skills/gstack-cso" ".codex/skills/gstack-cso"
+  remove_obsolete_path "$TARGET_DIR/.codex/skills/gstack-review" ".codex/skills/gstack-review"
+
+  copy_dir "$TEMPLATES/codex/skills/wf-quick" \
+    "$TARGET_DIR/.codex/skills/wf-quick" ".codex/skills/wf-quick"
+  copy_dir "$TEMPLATES/codex/skills/wf-small" \
+    "$TARGET_DIR/.codex/skills/wf-small" ".codex/skills/wf-small"
+  copy_dir "$TEMPLATES/codex/skills/wf-complex" \
+    "$TARGET_DIR/.codex/skills/wf-complex" ".codex/skills/wf-complex"
+  copy_dir "$TEMPLATES/codex/skills/wf-debug" \
+    "$TARGET_DIR/.codex/skills/wf-debug" ".codex/skills/wf-debug"
+  copy_dir "$TEMPLATES/codex/skills/wf-plan" \
+    "$TARGET_DIR/.codex/skills/wf-plan" ".codex/skills/wf-plan"
   copy_dir "$TEMPLATES/codex/skills/wf-install" \
     "$TARGET_DIR/.codex/skills/wf-install" ".codex/skills/wf-install"
-  copy_dir "$TEMPLATES/codex/skills/gstack-plan-eng-review" \
-    "$TARGET_DIR/.codex/skills/gstack-plan-eng-review" ".codex/skills/gstack-plan-eng-review"
-  copy_dir "$TEMPLATES/codex/skills/gstack-cso" \
-    "$TARGET_DIR/.codex/skills/gstack-cso" ".codex/skills/gstack-cso"
-  copy_dir "$TEMPLATES/codex/skills/gstack-review" \
-    "$TARGET_DIR/.codex/skills/gstack-review" ".codex/skills/gstack-review"
-
-  # frontend 和 fullstack 均需要 UI 设计审查 skill
-  if [[ "$PROJECT_TYPE" == "frontend" || "$PROJECT_TYPE" == "fullstack" ]]; then
-    copy_dir "$TEMPLATES/codex/skills/gstack-plan-design-review" \
-      "$TARGET_DIR/.codex/skills/gstack-plan-design-review" \
-      ".codex/skills/gstack-plan-design-review"
-  fi
 fi
 
 # — AGENTS.md 追加 ─────────────────────────────────────────────────────────────
@@ -571,13 +630,20 @@ if [[ -f "$TARGET_DIR/AGENTS.md" ]]; then
 所有功能变更通过 OpenSpec 状态机管理。禁止直接修改代码而不经过 propose 阶段。
 
 ### 工作流命令
+- \`/wf-quick\` — 快速通道（文案/样式/明确 bug，跳过 design gate）
+- \`/wf-small\` — 小需求完整通道
+- \`/wf-complex\` — 复杂后端/架构变更
+- \`/wf-debug\` — Debug / 重构 / 单测
+- \`/wf-plan\` — 产品/架构方案
 - \`/openspec-propose\` — 发起新变更（完整通道）
-- \`/openspec-quick\` — 快速通道（文案/样式/明确 bug，跳过 design gate）
 - \`/openspec-apply-change\` — 实现代码
 - \`/openspec-archive-change\` — 归档变更
 - \`/openspec-explore\` — 探索思考
 
 ### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
+需先安装官方 GStack。Codex 安装方式：
+\`git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.codex/skills/gstack && cd ~/.codex/skills/gstack && ./setup --host codex\`
+
 - \`/gstack-plan-eng-review\` — 工程审查（完整通道必须）
 - \`/gstack-cso\` — 安全审查（涉及配置/凭证时必须）
 - \`/gstack-review\` — 代码审查（apply 后运行）
@@ -629,8 +695,8 @@ done
 
 echo ""
 echo -e "  ${CYAN}快速使用：${RESET}"
-echo -e "    Claude Code: ${BOLD}/wf${RESET}  或  ${BOLD}/openspec-quick <描述>${RESET}"
-echo -e "    Codex App:   ${BOLD}/wf${RESET}  或  ${BOLD}/openspec-quick <描述>${RESET}"
+echo -e "    Claude Code: ${BOLD}/wf-quick${RESET} / ${BOLD}/wf-small${RESET} / ${BOLD}/wf-complex${RESET} / ${BOLD}/wf-debug${RESET} / ${BOLD}/wf-plan${RESET}"
+echo -e "    Codex App:   ${BOLD}/wf-quick${RESET} / ${BOLD}/wf-small${RESET} / ${BOLD}/wf-complex${RESET} / ${BOLD}/wf-debug${RESET} / ${BOLD}/wf-plan${RESET}"
 echo ""
 echo -e "  ${GREEN}${BOLD}安装脚本执行完毕。${RESET}"
 echo ""

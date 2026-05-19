@@ -26,8 +26,12 @@ ARG_TARGET=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --type)           ARG_TYPE="$2";   shift 2 ;;
-    --target)         ARG_TARGET="$2"; shift 2 ;;
+    --type)
+      [[ $# -lt 2 ]] && { err "--type 需要一个值（例：--type python-data）"; exit 1; }
+      ARG_TYPE="$2"; shift 2 ;;
+    --target)
+      [[ $# -lt 2 ]] && { err "--target 需要一个路径"; exit 1; }
+      ARG_TARGET="$2"; shift 2 ;;
     --no-interactive) NO_INTERACTIVE=true; shift ;;
     --switch)         SWITCH_MODE=true; shift ;;
     -*)               err "未知参数: $1"; exit 1 ;;
@@ -133,15 +137,7 @@ if [[ "$SWITCH_MODE" == "true" ]]; then
     err "--switch 需要配合 --type <档位> 使用"
     exit 1
   fi
-  # --switch 模式下若未通过参数指定目标目录，则交互询问（非交互模式默认 PWD）
-  if [[ -z "$ARG_TARGET" ]] && [[ "$NO_INTERACTIVE" == "false" ]]; then
-    raw=$(ask "目标项目目录" "$PWD")
-    TARGET_DIR="$(realpath "$raw")"
-  elif [[ -n "$ARG_TARGET" ]]; then
-    TARGET_DIR="$(realpath "$ARG_TARGET")"
-  else
-    TARGET_DIR="$PWD"
-  fi
+  # TARGET_DIR 已由脚本入口确定，此处直接使用
   if [[ ! -f "$TARGET_DIR/openspec/config.yaml" ]]; then
     err "未找到 openspec/config.yaml，请先运行完整安装"
     exit 1
@@ -174,6 +170,10 @@ step "安装配置"
 # 项目类型
 # 若通过 --type 参数指定，则跳过交互；否则展示菜单
 if [[ -n "$ARG_TYPE" ]]; then
+  case "$ARG_TYPE" in
+    backend|python-data|frontend|fullstack|vibe) ;;
+    *) err "未知档位: $ARG_TYPE（有效值：backend, python-data, frontend, fullstack, vibe）"; exit 1 ;;
+  esac
   PROJECT_TYPE="$ARG_TYPE"
   ok "项目类型: $PROJECT_TYPE（来自参数）"
 else
@@ -191,22 +191,29 @@ else
     3) PROJECT_TYPE="frontend"     ;;
     4) PROJECT_TYPE="fullstack"    ;;
     5) PROJECT_TYPE="vibe"         ;;
+    *) PROJECT_TYPE="backend"      ;;
   esac
   ok "项目类型: $PROJECT_TYPE"
 fi
 
 # 工具链
 echo ""
-echo -e "  ${BOLD}安装工具链${RESET}（Claude Code / Codex App）："
-cli_choice=$(ask_menu "选择工具" \
-  "Claude Code + Codex App（两个都装）" \
-  "仅 Claude Code" \
-  "仅 Codex App")
-case "$cli_choice" in
-  1) INSTALL_CLAUDE=true;  INSTALL_CODEX=true  ;;
-  2) INSTALL_CLAUDE=true;  INSTALL_CODEX=false ;;
-  3) INSTALL_CLAUDE=false; INSTALL_CODEX=true  ;;
-esac
+if [[ "$NO_INTERACTIVE" == "true" ]]; then
+  # 非交互模式下默认安装全部工具链，无需等待 TTY 输入
+  INSTALL_CLAUDE=true; INSTALL_CODEX=true
+  ok "安装工具链: Claude Code + Codex App（默认）"
+else
+  echo -e "  ${BOLD}安装工具链${RESET}（Claude Code / Codex App）："
+  cli_choice=$(ask_menu "选择工具" \
+    "Claude Code + Codex App（两个都装）" \
+    "仅 Claude Code" \
+    "仅 Codex App")
+  case "$cli_choice" in
+    1) INSTALL_CLAUDE=true;  INSTALL_CODEX=true  ;;
+    2) INSTALL_CLAUDE=true;  INSTALL_CODEX=false ;;
+    3) INSTALL_CLAUDE=false; INSTALL_CODEX=true  ;;
+  esac
+fi
 [[ "$INSTALL_CLAUDE" == "true" ]] && ok "Claude Code 工具链"
 [[ "$INSTALL_CODEX"  == "true" ]] && ok "Codex App 工具链"
 

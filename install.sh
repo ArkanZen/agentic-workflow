@@ -18,6 +18,23 @@ info() { echo -e "  ${CYAN}→${RESET} $*"; }
 WORKFLOW_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATES="$WORKFLOW_DIR/templates"
 
+# ── 参数解析 ──────────────────────────────────────────────────────────────────
+NO_INTERACTIVE=false
+SWITCH_MODE=false
+ARG_TYPE=""
+ARG_TARGET=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --type)           ARG_TYPE="$2";   shift 2 ;;
+    --target)         ARG_TARGET="$2"; shift 2 ;;
+    --no-interactive) NO_INTERACTIVE=true; shift ;;
+    --switch)         SWITCH_MODE=true; shift ;;
+    -*)               err "未知参数: $1"; exit 1 ;;
+    *)                ARG_TARGET="$1"; shift ;;  # 位置参数：目标目录
+  esac
+done
+
 # ── 工具函数 ──────────────────────────────────────────────────────────────────
 ask() {
   local prompt="$1" default="$2" answer
@@ -65,9 +82,9 @@ echo ""
 # 第一步：目标项目目录
 # ══════════════════════════════════════════════════════════════════════════════
 step "目标项目"
-if [[ "${1:-}" != "" ]]; then
-  TARGET_DIR="$(realpath "$1")"
-  info "目标目录（来自参数）: $TARGET_DIR"
+if [[ -n "$ARG_TARGET" ]]; then
+  TARGET_DIR="$(realpath "$ARG_TARGET")"
+  info "目标目录: $TARGET_DIR"
 else
   raw=$(ask "项目目录" "$PWD")
   TARGET_DIR="$(realpath "$raw")"
@@ -109,19 +126,74 @@ else
   exit 1
 fi
 
+# ── Switch 模式 ───────────────────────────────────────────────────────────────
+# --switch 只替换 openspec/config.yaml，不做完整安装，安装后退出
+if [[ "$SWITCH_MODE" == "true" ]]; then
+  if [[ -z "$ARG_TYPE" ]]; then
+    err "--switch 需要配合 --type <档位> 使用"
+    exit 1
+  fi
+  # --switch 模式下若未通过参数指定目标目录，则交互询问（非交互模式默认 PWD）
+  if [[ -z "$ARG_TARGET" ]] && [[ "$NO_INTERACTIVE" == "false" ]]; then
+    raw=$(ask "目标项目目录" "$PWD")
+    TARGET_DIR="$(realpath "$raw")"
+  elif [[ -n "$ARG_TARGET" ]]; then
+    TARGET_DIR="$(realpath "$ARG_TARGET")"
+  else
+    TARGET_DIR="$PWD"
+  fi
+  if [[ ! -f "$TARGET_DIR/openspec/config.yaml" ]]; then
+    err "未找到 openspec/config.yaml，请先运行完整安装"
+    exit 1
+  fi
+  case "$ARG_TYPE" in
+    python-data) new_tmpl="$TEMPLATES/openspec/config-python-data.yaml" ;;
+    frontend)    new_tmpl="$TEMPLATES/openspec/config-frontend.yaml"    ;;
+    fullstack)   new_tmpl="$TEMPLATES/openspec/config-fullstack.yaml"   ;;
+    vibe)        new_tmpl="$TEMPLATES/openspec/config-vibe.yaml"        ;;
+    backend)     new_tmpl="$TEMPLATES/openspec/config-backend.yaml"     ;;
+    *) err "未知档位: $ARG_TYPE"; exit 1 ;;
+  esac
+  cp "$new_tmpl" "$TARGET_DIR/openspec/config.yaml"
+  ok "档位已切换到: $ARG_TYPE"
+  if [[ "$ARG_TYPE" == "fullstack" ]]; then
+    mkdir -p "$TARGET_DIR/openspec/specs/frontend" "$TARGET_DIR/openspec/specs/backend"
+    ok "openspec/specs/frontend/ 和 backend/（已创建）"
+  fi
+  echo ""
+  echo -e "  ${GREEN}${BOLD}切换完成。${RESET}"
+  echo ""
+  exit 0
+fi
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 第三步：交互选项
 # ══════════════════════════════════════════════════════════════════════════════
 step "安装配置"
 
 # 项目类型
-echo ""
-echo -e "  ${BOLD}项目类型${RESET}（影响 openspec/config.yaml 的 design gate 规则）："
-type_choice=$(ask_menu "选择类型" \
-  "后端 (backend) — 工程审查 + 安全审查" \
-  "前端 (frontend) — 工程审查 + 安全审查 + UI 设计审查")
-[[ "$type_choice" == "1" ]] && PROJECT_TYPE="backend" || PROJECT_TYPE="frontend"
-ok "项目类型: $PROJECT_TYPE"
+# 若通过 --type 参数指定，则跳过交互；否则展示菜单
+if [[ -n "$ARG_TYPE" ]]; then
+  PROJECT_TYPE="$ARG_TYPE"
+  ok "项目类型: $PROJECT_TYPE（来自参数）"
+else
+  echo ""
+  echo -e "  ${BOLD}选择最符合你的项目类型${RESET}："
+  type_choice=$(ask_menu "项目类型" \
+    "📦 后端服务 — 服务器 API、业务逻辑、数据库操作" \
+    "🐍 Python 数据项目 — 数据分析、自动报表、数据处理脚本" \
+    "🎨 前端应用 — 网页界面、H5、React/Vue/小程序" \
+    "🔗 前后端合体 — 同一个仓库里既有前端界面又有后端服务" \
+    "⚡ 轻量快速模式 — 个人项目、快速验证想法、不需要严格审查流程")
+  case "$type_choice" in
+    1) PROJECT_TYPE="backend"      ;;
+    2) PROJECT_TYPE="python-data"  ;;
+    3) PROJECT_TYPE="frontend"     ;;
+    4) PROJECT_TYPE="fullstack"    ;;
+    5) PROJECT_TYPE="vibe"         ;;
+  esac
+  ok "项目类型: $PROJECT_TYPE"
+fi
 
 # 工具链
 echo ""
@@ -227,18 +299,21 @@ echo ""
 echo -e "  将在 ${BOLD}$TARGET_DIR${RESET} 安装："
 echo -e "    • openspec/config.yaml（$PROJECT_TYPE 模板）"
 echo -e "    • openspec/specs/project.md 和 system.md（如不存在则创建 stub）"
-[[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/commands/wf.md + openspec-quick.md"
+[[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/commands/wf.md + openspec-quick.md + wf-install.md"
 [[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/CLAUDE.md（如不存在则创建）"
-[[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • .codex/skills/wf/ + openspec-quick/ + gstack-plan-eng-review/"
+[[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • .codex/skills/wf/ + openspec-quick/ + wf-install/ + gstack-plan-eng-review/"
 [[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • .codex/skills/gstack-cso/ + gstack-review/"
-[[ "$PROJECT_TYPE"   == "frontend" ]] && [[ "$INSTALL_CODEX" == "true" ]] && \
-  echo -e "    • .codex/skills/gstack-plan-design-review/（前端专属）"
+[[ "$PROJECT_TYPE"   == "frontend" || "$PROJECT_TYPE" == "fullstack" ]] && [[ "$INSTALL_CODEX" == "true" ]] && \
+  echo -e "    • .codex/skills/gstack-plan-design-review/（前端/全栈专属）"
 echo -e "    • AGENTS.md 追加 workflow 段落（如不存在则跳过）"
 echo ""
 
-if ! ask_yn "确认安装?"; then
-  echo -e "\n  已取消。"
-  exit 0
+# --no-interactive 模式下跳过确认，直接执行
+if [[ "$NO_INTERACTIVE" == "false" ]]; then
+  if ! ask_yn "确认安装?"; then
+    echo -e "\n  已取消。"
+    exit 0
+  fi
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -249,12 +324,15 @@ step "安装中..."
 INSTALLED=()
 SKIPPED=()
 
-# 辅助：复制文件，有冲突时询问是否覆盖
+# 辅助：复制文件，有冲突时询问是否覆盖；--no-interactive 模式下默认跳过
 copy_file() {
   local src="$1" dest="$2" label="$3"
   mkdir -p "$(dirname "$dest")"
   if [[ -f "$dest" ]]; then
-    if ask_yn "  已存在 $label，覆盖?" "n"; then
+    if [[ "$NO_INTERACTIVE" == "true" ]]; then
+      info "$label（已跳过，文件已存在）"
+      SKIPPED+=("$label")
+    elif ask_yn "  已存在 $label，覆盖?" "n"; then
       cp "$src" "$dest"
       ok "$label（已更新）"
       INSTALLED+=("$label")
@@ -269,11 +347,14 @@ copy_file() {
   fi
 }
 
-# 辅助：复制目录，有冲突时询问是否覆盖
+# 辅助：复制目录，有冲突时询问是否覆盖；--no-interactive 模式下默认跳过
 copy_dir() {
   local src="$1" dest="$2" label="$3"
   if [[ -d "$dest" ]]; then
-    if ask_yn "  已存在 $label，覆盖?" "n"; then
+    if [[ "$NO_INTERACTIVE" == "true" ]]; then
+      info "$label（已跳过，目录已存在）"
+      SKIPPED+=("$label")
+    elif ask_yn "  已存在 $label，覆盖?" "n"; then
       rm -rf "$dest"
       cp -r "$src" "$dest"
       ok "$label（已更新）"
@@ -292,12 +373,20 @@ copy_dir() {
 echo ""
 
 # — openspec/config.yaml ───────────────────────────────────────────────────────
-if [[ "$PROJECT_TYPE" == "frontend" ]]; then
-  config_tmpl="$TEMPLATES/openspec/config-frontend.yaml"
-else
-  config_tmpl="$TEMPLATES/openspec/config-backend.yaml"
-fi
+# 根据项目类型选择对应的配置模板
+case "$PROJECT_TYPE" in
+  python-data) config_tmpl="$TEMPLATES/openspec/config-python-data.yaml" ;;
+  frontend)    config_tmpl="$TEMPLATES/openspec/config-frontend.yaml"    ;;
+  fullstack)   config_tmpl="$TEMPLATES/openspec/config-fullstack.yaml"   ;;
+  vibe)        config_tmpl="$TEMPLATES/openspec/config-vibe.yaml"        ;;
+  *)           config_tmpl="$TEMPLATES/openspec/config-backend.yaml"     ;;
+esac
 copy_file "$config_tmpl" "$TARGET_DIR/openspec/config.yaml" "openspec/config.yaml"
+# fullstack 项目额外创建前后端子目录，方便分类管理 spec 文件
+if [[ "$PROJECT_TYPE" == "fullstack" ]]; then
+  mkdir -p "$TARGET_DIR/openspec/specs/frontend" "$TARGET_DIR/openspec/specs/backend"
+  ok "openspec/specs/frontend/ 和 backend/（fullstack 子目录已创建）"
+fi
 
 # — openspec/specs/ stubs ──────────────────────────────────────────────────────
 mkdir -p "$TARGET_DIR/openspec/specs"
@@ -380,6 +469,8 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
     "$TARGET_DIR/.claude/commands/wf.md" ".claude/commands/wf.md"
   copy_file "$TEMPLATES/claude/commands/openspec-quick.md" \
     "$TARGET_DIR/.claude/commands/openspec-quick.md" ".claude/commands/openspec-quick.md"
+  copy_file "$TEMPLATES/claude/commands/wf-install.md" \
+    "$TARGET_DIR/.claude/commands/wf-install.md" ".claude/commands/wf-install.md"
 
   if [[ ! -f "$TARGET_DIR/.claude/CLAUDE.md" ]]; then
     mkdir -p "$TARGET_DIR/.claude"
@@ -424,6 +515,8 @@ if [[ "$INSTALL_CODEX" == "true" ]]; then
     "$TARGET_DIR/.codex/skills/wf" ".codex/skills/wf"
   copy_dir "$TEMPLATES/codex/skills/openspec-quick" \
     "$TARGET_DIR/.codex/skills/openspec-quick" ".codex/skills/openspec-quick"
+  copy_dir "$TEMPLATES/codex/skills/wf-install" \
+    "$TARGET_DIR/.codex/skills/wf-install" ".codex/skills/wf-install"
   copy_dir "$TEMPLATES/codex/skills/gstack-plan-eng-review" \
     "$TARGET_DIR/.codex/skills/gstack-plan-eng-review" ".codex/skills/gstack-plan-eng-review"
   copy_dir "$TEMPLATES/codex/skills/gstack-cso" \
@@ -431,7 +524,8 @@ if [[ "$INSTALL_CODEX" == "true" ]]; then
   copy_dir "$TEMPLATES/codex/skills/gstack-review" \
     "$TARGET_DIR/.codex/skills/gstack-review" ".codex/skills/gstack-review"
 
-  if [[ "$PROJECT_TYPE" == "frontend" ]]; then
+  # frontend 和 fullstack 均需要 UI 设计审查 skill
+  if [[ "$PROJECT_TYPE" == "frontend" || "$PROJECT_TYPE" == "fullstack" ]]; then
     copy_dir "$TEMPLATES/codex/skills/gstack-plan-design-review" \
       "$TARGET_DIR/.codex/skills/gstack-plan-design-review" \
       ".codex/skills/gstack-plan-design-review"

@@ -1,0 +1,27 @@
+# vibe 模式 — 轻量快速，适合个人项目、原型验证，无 design gate
+
+schema: spec-driven
+
+context: |
+  完整项目上下文见 openspec/specs/project.md。
+  AI 在生成每个工件时须先读取该文件。
+
+# vibe 模式下所有变更均走快速通道，无需经过 design gate
+quick_change_criteria: 所有变更均可走快速通道（vibe 模式）
+
+rules:
+  proposal:
+    - 提案控制在 600 字以内。
+    - 必须包含「非目标」章节，明确圈定边界。
+    - 安全规则：禁止在任何工件中写入 Token、密码、凭证或内部地址。
+      只引用配置键名，不写实际值。
+
+  specs:
+    - Delta spec 须用「扩展/覆盖」语言引用 system.md 中已有基线，不重复陈述。
+
+  design:
+    - 直接撰写 design.md，无需调用任何审查关卡。
+
+  tasks:
+    - 每个任务清晰可验证即可，无 gate 检查。
+    - 每个任务的实现工作量控制在 2–3 小时以内。

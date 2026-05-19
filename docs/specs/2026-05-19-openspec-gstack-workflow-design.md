@@ -7,6 +7,20 @@
 
 ---
 
+## 零、工作流模式总览
+
+所有任务通过 `/wf` 统一入口进入，选择模式后路由到对应工具链。`/openspec-quick` 保留为 mode 0 的直接快捷方式。
+
+| # | 模式 | 工具链 | 典型触发描述 |
+|---|------|--------|------------|
+| 0 | ⚡ 快速通道 | OpenSpec quick（无 gate） | 「修复」「调整文案」「样式」 |
+| 1 | 🔧 小需求 | OpenSpec → GStack gate | 「新增指标」「加一个字段」 |
+| 2 | 🏗️ 复杂后端 | Superpowers brainstorm → OpenSpec → GStack → Superpowers plan/verify | 「重构基类」「新接口」「架构调整」 |
+| 3 | 🔍 Debug/重构/单测 | Superpowers debugging/TDD → 可选 quick 记录 | 「找 bug」「补单测」「重构这段」 |
+| 4 | 💡 产品/架构方案 | GStack office-hours + ceo-review → 可选进 mode 1/2 | 「要不要做」「怎么设计」「值不值得」 |
+
+---
+
 ## 一、总体架构
 
 ### 核心原则
@@ -88,9 +102,12 @@ propose → [工程审查 gate] → design → [确认通过] → tasks → appl
 │   │   └── config-frontend.yaml         ← 前端项目 openspec/config.yaml 模板
 │   ├── claude/
 │   │   └── commands/
-│   │       └── openspec-quick.md        ← Claude Code 快速通道命令模板
+│   │       ├── wf.md                    ← 统一模式入口（5 种模式路由）
+│   │       └── openspec-quick.md        ← mode 0 快捷方式
 │   └── codex/
 │       └── skills/
+│           ├── wf/
+│           │   └── SKILL.md             ← 统一模式入口（5 种模式路由）
 │           ├── gstack-plan-eng-review/
 │           │   └── SKILL.md             ← 从 GStack 移植，剥除 preamble
 │           ├── gstack-plan-design-review/
@@ -100,7 +117,7 @@ propose → [工程审查 gate] → design → [确认通过] → tasks → appl
 │           ├── gstack-review/
 │           │   └── SKILL.md
 │           └── openspec-quick/
-│               └── SKILL.md             ← Codex 快速通道 skill 模板
+│               └── SKILL.md             ← mode 0 快捷方式
 └── README.md                            ← 安装说明
 ```
 
@@ -421,12 +438,18 @@ cp $WORKFLOW/templates/openspec/config-backend.yaml openspec/config.yaml
 mkdir -p .claude/commands
 cp $WORKFLOW/templates/claude/commands/openspec-quick.md .claude/commands/
 
-# Codex GStack skills
+# Codex GStack skills + 统一入口
 mkdir -p .codex/skills
+cp -r $WORKFLOW/templates/codex/skills/wf .codex/skills/
 cp -r $WORKFLOW/templates/codex/skills/gstack-plan-eng-review .codex/skills/
 cp -r $WORKFLOW/templates/codex/skills/gstack-cso .codex/skills/
 cp -r $WORKFLOW/templates/codex/skills/gstack-review .codex/skills/
 cp -r $WORKFLOW/templates/codex/skills/openspec-quick .codex/skills/
+
+# Claude 命令（统一入口 + 快速通道快捷方式）
+mkdir -p .claude/commands
+cp $WORKFLOW/templates/claude/commands/wf.md .claude/commands/
+cp $WORKFLOW/templates/claude/commands/openspec-quick.md .claude/commands/
 
 # 4. 手动创建项目专属文件（内容见第三节）
 # openspec/specs/project.md  ← 填入本项目技术栈和约束
@@ -481,15 +504,125 @@ AI 确认符合快速条件（已知 bug，≤1 文件，无架构影响），
 
 ---
 
-## 九、两套方案对比小结
+## 九、`/wf` 模式路由器模板
+
+### `templates/claude/commands/wf.md`
+
+```markdown
+---
+description: 工作流模式选择器。描述任务，选择模式，AI 路由到正确工具链。
+  触发词：wf、工作流、我想做、开始、新任务。
+---
+
+工作流模式选择。
+
+用 AskUserQuestion 展示 5 个模式，让用户选择：
+
+- ⚡ 快速通道 — 文案/样式/明确 bug，改动 ≤3 文件，跳过所有 gate
+- 🔧 小需求 — 功能点清晰，改动范围明确（OpenSpec + GStack）
+- 🏗️ 复杂后端 — 跨模块/架构变更/边界模糊（OpenSpec + GStack + Superpowers）
+- 🔍 Debug/重构/单测 — 问题已知，无需新 spec（Superpowers 优先）
+- 💡 产品/架构方案 — 还不确定是否值得做（GStack 优先）
+
+如果用户已在 /wf 命令参数里描述了任务，将描述带入对应工具链的第一步，不要再重复询问。
+
+路由规则：
+
+**Mode 0（快速通道）**
+→ 执行 openspec-quick 流程（见 .claude/commands/openspec-quick.md）
+
+**Mode 1（小需求）**
+→ 执行 /openspec-propose 完整通道
+
+**Mode 2（复杂后端）**
+→ 步骤一：调用 brainstorming skill（superpowers:brainstorming）探索需求和边界
+→ 步骤二：设计确认后，执行 /openspec-propose（含 GStack design gate）
+→ 步骤三：apply 前，调用 superpowers:writing-plans 细化任务分解
+→ 步骤四：/openspec-apply-change 实现
+→ 步骤五：完成后调用 superpowers:verification-before-completion 验收
+→ 步骤六：/openspec-archive-change 归档
+
+**Mode 3（Debug/重构/单测）**
+→ 判断子类型：
+  - 找 bug / 排查问题 → 调用 superpowers:systematic-debugging
+  - 补单测 / TDD 新功能 → 调用 superpowers:test-driven-development
+  - 纯重构 → 调用 superpowers:brainstorming 确认重构边界，再直接实现
+→ 完成后询问：「是否需要用 /openspec-quick 记录这次修改的结论？」
+
+**Mode 4（产品/架构方案）**
+→ 步骤一：调用 GStack /office-hours（自由探索想法）
+→ 步骤二：调用 /plan-ceo-review（值得做？scope 合理？）
+→ 步骤三：review 完成后询问：「决定做了吗？选 Mode 1 还是 2 继续？」
+```
+
+### `templates/codex/skills/wf/SKILL.md`
+
+```yaml
+---
+name: wf
+description: |
+  工作流模式选择器。描述任务，选择模式，路由到正确工具链。
+  5 种模式：快速通道 / 小需求 / 复杂后端 / Debug重构单测 / 产品架构方案。
+  触发词：wf、工作流、我想做、开始、新任务。
+---
+
+工作流模式选择。
+
+用 AskUserQuestion 展示 5 个模式，让用户选择：
+
+- ⚡ 快速通道 — 文案/样式/明确 bug，≤3 文件，跳过 gate
+- 🔧 小需求 — 功能点清晰（OpenSpec + GStack）
+- 🏗️ 复杂后端 — 跨模块/架构/边界模糊（OpenSpec + GStack + Superpowers）
+- 🔍 Debug/重构/单测 — 问题已知（Superpowers 优先）
+- 💡 产品/架构方案 — 还不确定做不做（GStack 优先）
+
+如果用户已在调用时描述了任务，将描述带入对应工具链第一步，不要重复询问。
+
+路由规则：
+
+**Mode 0（快速通道）**
+→ 执行 /openspec-quick 流程
+
+**Mode 1（小需求）**
+→ 执行 /openspec-propose 完整通道
+
+**Mode 2（复杂后端）**
+→ 步骤一：调用 brainstorming skill 探索需求和边界
+→ 步骤二：执行 /openspec-propose（含 /gstack-plan-eng-review gate）
+→ 步骤三：apply 前细化任务分解（writing-plans 风格）
+→ 步骤四：/openspec-apply-change 实现
+→ 步骤五：完成后执行 verification-before-completion 验收
+→ 步骤六：/openspec-archive-change 归档
+
+**Mode 3（Debug/重构/单测）**
+→ 判断子类型：
+  - 找 bug → 按 systematic-debugging 方法论：复现 → 假设 → 验证 → 修复
+  - 补单测 → 按 TDD 方法论：先写测试 → 实现 → 验证覆盖率
+  - 纯重构 → 先明确重构边界和目标，再逐步实现
+→ 完成后询问：「是否用 /openspec-quick 记录结论？」
+
+**Mode 4（产品/架构方案）**
+→ 步骤一：调用 /gstack-plan-eng-review 从工程视角评估可行性
+→ 步骤二：从产品视角梳理：值得做？用户价值？替代方案？
+→ 步骤三：完成后询问：「决定做了吗？选 Mode 1 还是 2 继续？」
+
+注意：Codex 侧 Mode 4 用 /gstack-plan-eng-review 替代 GStack 原生 /office-hours。
+如需完整 office-hours 体验，切换到 Claude Code 执行。
+```
+
+---
+
+## 十、两套方案对比小结
 
 | 维度 | Claude Code 生态 | Codex 生态 |
 |------|----------------|-----------|
+| 统一入口 | `.claude/commands/wf.md` | `.codex/skills/wf/SKILL.md` |
 | GStack 审查 | 原生 skill，全功能（含浏览器 QA、telemetry） | 移植 skill，审查逻辑完整，preamble 降级 |
 | OpenSpec 集成 | 原生 skill（`.claude/skills/`） | 原生 skill（`.codex/skills/`，已有） |
 | 快速通道 | `.claude/commands/openspec-quick.md` | `.codex/skills/openspec-quick/SKILL.md` |
 | 共享工件 | `openspec/` 目录 | 同一份，无差异 |
 | Gate 机制 | `openspec/config.yaml` rules | 同一份 config，名称对齐 |
+| Mode 4 产品方案 | GStack `/office-hours` 全功能 | 降级为 `/gstack-plan-eng-review` 替代 |
 | 模板来源 | `arkan-workflow/templates/` | 同上 |
 | 维护点 | GStack 自动升级 | 移植 skill 需手动同步 GStack 更新 |
 | 浏览器 QA | `/qa` 全功能 | 无浏览器，需补充 staging URL 测试 |

@@ -21,16 +21,16 @@ TEMPLATES="$WORKFLOW_DIR/templates"
 # ── 工具函数 ──────────────────────────────────────────────────────────────────
 ask() {
   local prompt="$1" default="$2" answer
-  printf "  ${BOLD}%s${RESET} [%s]: " "$prompt" "$default"
-  read -r answer
+  printf "  ${BOLD}%s${RESET} [%s]: " "$prompt" "$default" >/dev/tty
+  read -r answer </dev/tty
   echo "${answer:-$default}"
 }
 
 ask_yn() {
   local prompt="$1" default="${2:-n}" answer
   local hint; [[ "$default" == "y" ]] && hint="Y/n" || hint="y/N"
-  printf "  ${BOLD}%s${RESET} [%s]: " "$prompt" "$hint"
-  read -r answer
+  printf "  ${BOLD}%s${RESET} [%s]: " "$prompt" "$hint" >/dev/tty
+  read -r answer </dev/tty
   answer="${answer:-$default}"
   [[ "$answer" =~ ^[Yy] ]]
 }
@@ -39,17 +39,17 @@ ask_menu() {
   local prompt="$1"; shift
   local options=("$@") i
   for i in "${!options[@]}"; do
-    echo -e "    $((i+1))) ${options[$i]}"
+    echo -e "    $((i+1))) ${options[$i]}" >/dev/tty
   done
   local answer
   while true; do
-    printf "  ${BOLD}%s${RESET} [1-%d]: " "$prompt" "${#options[@]}"
-    read -r answer
+    printf "  ${BOLD}%s${RESET} [1-%d]: " "$prompt" "${#options[@]}" >/dev/tty
+    read -r answer </dev/tty
     answer="${answer:-1}"
     if [[ "$answer" =~ ^[0-9]+$ ]] && (( answer >= 1 && answer <= ${#options[@]} )); then
       echo "$answer"; return
     fi
-    warn "请输入 1 到 ${#options[@]} 之间的数字"
+    echo -e "  ${YELLOW}⚠${RESET}  请输入 1 到 ${#options[@]} 之间的数字" >/dev/tty
   done
 }
 
@@ -161,7 +161,7 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
     SOFT_WARN=true
   fi
 
-  if ls "$HOME/.claude/plugins/cache/claude-plugins-official/superpowers/" &>/dev/null 2>&1; then
+  if [[ -d "$HOME/.claude/plugins/cache/claude-plugins-official/superpowers" ]]; then
     ok "Superpowers 插件已安装"
   else
     warn "Superpowers 未安装"
@@ -248,7 +248,6 @@ step "安装中..."
 
 INSTALLED=()
 SKIPPED=()
-ERRORS=()
 
 # 辅助：复制文件，有冲突时询问是否覆盖
 copy_file() {

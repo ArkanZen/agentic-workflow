@@ -160,6 +160,17 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
     info "安装 GStack: https://gstack.dev"
     SOFT_WARN=true
   fi
+
+  if ls "$HOME/.claude/plugins/cache/claude-plugins-official/superpowers/" &>/dev/null 2>&1; then
+    ok "Superpowers 插件已安装"
+  else
+    warn "Superpowers 未安装"
+    info "/wf Mode 2（复杂后端）和 Mode 3（Debug/重构/单测）依赖以下 skill："
+    info "  brainstorming / writing-plans / verification-before-completion"
+    info "  systematic-debugging / test-driven-development"
+    info "安装方法：Claude Code 中运行 /plugins install superpowers"
+    SOFT_WARN=true
+  fi
 fi
 
 if [[ "$INSTALL_CODEX" == "true" ]]; then

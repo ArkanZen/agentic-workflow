@@ -175,7 +175,7 @@ if [[ -n "$ARG_TYPE" ]]; then
     *) err "未知档位: $ARG_TYPE（有效值：backend, python-data, frontend, fullstack, vibe）"; exit 1 ;;
   esac
   PROJECT_TYPE="$ARG_TYPE"
-  ok "项目类型: $PROJECT_TYPE（来自参数）"
+  ok "项目类型: ${PROJECT_TYPE}（来自参数）"
 else
   echo ""
   echo -e "  ${BOLD}选择最符合你的项目类型${RESET}："

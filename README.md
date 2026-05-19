@@ -1,149 +1,148 @@
-# arkan-workflow
+# agentic-workflow
 
-OpenSpec + GStack 工作流模板中心仓库。
+> 一套面向 AI 辅助开发的工作流框架，让 Claude Code 和 Codex App 共用同一套审查规则、同一份变更历史。
 
-所有工作流模板在此维护，各项目通过安装步骤获取。两个 CLI（Claude Code 和 Codex App）
-通过同名 skill 实现审查对等，共享同一份 `openspec/` 工件目录。
+一条命令安装，AI 自动识别项目类型，无需手动配置。
 
-## 模板列表
+---
 
-| 路径 | 用途 | 适用 |
-|------|------|------|
-| `templates/openspec/config-backend.yaml` | 后端项目 OpenSpec 配置，含 GStack gate | 所有后端项目 |
-| `templates/openspec/config-frontend.yaml` | 前端项目 OpenSpec 配置，含设计 gate | 前端项目 |
-| `templates/openspec/config-python-data.yaml` | Python 数据项目 OpenSpec 配置，含 SQL 口径 gate | Python 数据/报表项目 |
-| `templates/openspec/config-fullstack.yaml` | 全栈项目 OpenSpec 配置，含工程+设计 gate | 全栈项目 |
-| `templates/openspec/config-vibe.yaml` | 轻量项目 OpenSpec 配置，无 gate | 个人项目/原型 |
-| `templates/claude/commands/wf.md` | 5 模式工作流入口 | Claude Code |
-| `templates/claude/commands/openspec-quick.md` | 快速通道变更 | Claude Code |
-| `templates/claude/commands/wf-install.md` | AI 驱动的工作流安装/切换 | Claude Code |
-| `templates/codex/skills/wf/` | 5 模式工作流入口 | Codex App |
-| `templates/codex/skills/openspec-quick/` | 快速通道变更 | Codex App |
-| `templates/codex/skills/wf-install/` | AI 驱动的工作流安装/切换 | Codex App |
-| `templates/codex/skills/gstack-plan-eng-review/` | 工程审查（从 GStack 移植） | Codex App |
-| `templates/codex/skills/gstack-cso/` | 安全审查（从 GStack 移植） | Codex App |
-| `templates/codex/skills/gstack-review/` | 代码审查（从 GStack 移植） | Codex App |
-| `templates/codex/skills/gstack-plan-design-review/` | 设计审查（从 GStack 移植） | Codex App，前端 |
+## 为什么需要这个
 
-## 安装（后端项目）
+AI 写代码越来越快，但容易跳过设计评审、埋下质量隐患。这个工作流通过在 `openspec/config.yaml` 里注入 **gate 规则**，让 AI 在生成方案时自我审查，不通过就不能推进到实现阶段。
 
-```bash
-WORKFLOW=/Users/ryan/aiworkspace/arkan-workflow
-PROJECT=/path/to/your/project
-cd "$PROJECT"
+核心思路：
+- **OpenSpec**：spec 驱动的变更管理状态机（proposal → design gate → tasks → 归档）
+- **Gate 机制**：AI 自我执行的审查关卡，配置即规则
+- **双生态**：Claude Code 和 Codex App 用同一套命令、同一份 `openspec/` 产物
 
-# 1. 复制 OpenSpec 配置
-cp "$WORKFLOW/templates/openspec/config-backend.yaml" openspec/config.yaml
+---
 
-# 2. 创建 specs 目录
-mkdir -p openspec/specs
+## 五种工作流档位
 
-# 3. 安装 Claude 命令
-mkdir -p .claude/commands
-cp "$WORKFLOW/templates/claude/commands/wf.md" .claude/commands/
-cp "$WORKFLOW/templates/claude/commands/openspec-quick.md" .claude/commands/
+按项目类型选一个，安装对应的 `config.yaml`：
 
-# 4. 安装 Codex skills
-mkdir -p .codex/skills
-cp -r "$WORKFLOW/templates/codex/skills/wf" .codex/skills/
-cp -r "$WORKFLOW/templates/codex/skills/openspec-quick" .codex/skills/
-cp -r "$WORKFLOW/templates/codex/skills/gstack-plan-eng-review" .codex/skills/
-cp -r "$WORKFLOW/templates/codex/skills/gstack-cso" .codex/skills/
-cp -r "$WORKFLOW/templates/codex/skills/gstack-review" .codex/skills/
+| 档位 | 适用场景 | Gate |
+|------|---------|------|
+| 📦 `backend` | 服务器 API、业务逻辑、数据库操作 | 工程审查 + 条件安全审查 |
+| 🐍 `python-data` | 数据分析、自动报表、数据处理脚本 | 工程审查 + SQL 口径审查 + 条件安全审查 |
+| 🎨 `frontend` | 网页界面、H5、React/Vue/小程序 | 工程审查 + 条件 UI 设计审查 |
+| 🔗 `fullstack` | 同一仓库里既有前端界面又有后端服务 | 工程审查 + UI 设计审查 + 条件安全审查 |
+| ⚡ `vibe` | 个人项目、原型验证、不需要严格审查 | 无 gate，所有变更走快速通道 |
 
-# 5. 手动创建项目专属文件
-# openspec/specs/project.md  ← 填入技术栈和约束
-# openspec/specs/system.md   ← 逆向提取系统级 baseline
+---
 
-# 6. 在 AGENTS.md 和 .claude/CLAUDE.md 末尾追加 workflow 段落
+## 安装
+
+### 方式一：让 AI 帮你装（推荐）
+
+把这个仓库地址丢给 AI，说一句话：
+
+```
+帮我安装一下这个工作流：https://github.com/ArkanZen/agentic-workflow
 ```
 
-## 安装（前端项目差异）
+AI 会：
+1. 读取本文件了解档位规则
+2. 分析你的项目结构，推断最匹配的档位
+3. 展示置信度推荐，等待你确认
+4. 自动执行安装，无需额外操作
+
+### 方式二：手动安装
 
 ```bash
-# config 用前端版
-cp "$WORKFLOW/templates/openspec/config-frontend.yaml" openspec/config.yaml
+# 克隆本仓库（选一个本地目录）
+git clone https://github.com/ArkanZen/agentic-workflow ~/agentic-workflow
 
-# 额外安装设计审查 skill
-cp -r "$WORKFLOW/templates/codex/skills/gstack-plan-design-review" .codex/skills/
+# 进入你的项目目录
+cd /path/to/your/project
+
+# 运行安装脚本（会有交互式菜单引导你选择档位和工具链）
+bash ~/agentic-workflow/install.sh
 ```
 
-## 工作流模式
+### 方式三：非交互安装（CI / AI 程序化调用）
 
-| # | 模式 | 工具链 | 触发场景 |
-|---|------|--------|---------|
-| 0 | ⚡ 快速通道 | openspec-quick（无 gate） | 文案/样式/明确 bug |
-| 1 | 🔧 小需求 | OpenSpec → GStack gate | 新增指标、加字段 |
-| 2 | 🏗️ 复杂后端 | Brainstorm → OpenSpec → GStack → Superpowers | 重构基类、新接口 |
-| 3 | 🔍 Debug/重构/单测 | Superpowers 优先 | 找 bug、补单测 |
-| 4 | 💡 产品/架构方案 | GStack office-hours + CEO review | 做不做、怎么设计 |
+```bash
+bash ~/agentic-workflow/install.sh \
+  --type python-data \
+  --target /path/to/your/project \
+  --no-interactive
+```
+
+| 参数 | 说明 |
+|------|------|
+| `--type <档位>` | backend / python-data / frontend / fullstack / vibe |
+| `--target <目录>` | 目标项目目录（默认交互询问） |
+| `--no-interactive` | 完全非交互，冲突文件默认跳过 |
+| `--switch` | 仅替换 config.yaml，切换档位（不重新安装） |
+
+---
+
+## 安装后的工作流
+
+安装完成后，在 Claude Code 或 Codex App 里运行 `/wf`，选择模式：
+
+| 模式 | 场景 | 工具链 |
+|------|------|--------|
+| ⚡ 快速通道 | 文案/样式/明确 bug | `/openspec-quick` |
+| 🔧 小需求 | 新增字段、加指标 | OpenSpec → Gate 审查 |
+| 🏗️ 复杂后端 | 重构、新接口设计 | 方案探索 → OpenSpec → Gate |
+| 🔍 Debug/单测 | 找 bug、补测试 | 直接进入实现 |
+| 💡 产品/架构 | 做不做、怎么设计 | 方案讨论 |
+
+### 切换档位
+
+项目类型变了？用 `/wf-install` 命令，AI 会检测当前档位并引导切换。
+
+---
 
 ## Gate 机制
 
-`openspec/config.yaml` 的 `rules:` 字段注入 gate 逻辑，AI 自我执行。
-`design.md` 顶部工程审查状态为「阻断」时，不得生成 `tasks.md`。
+`openspec/config.yaml` 的 `rules:` 字段定义了 AI 必须遵守的审查规则。
 
-## 维护说明
-
-- GStack 持续更新，移植 skill 需定期手动 diff 更新（建议每季度一次）
-- 移植 skill 头部注明移植日期，便于追踪漂移
-
-## AI 安装指南
-
-> 本节供 AI 助手读取。用户只需说一句话，AI 可自动完成工作流安装。
-
-### 一句话安装
-
-用户对 AI 说：
-> "帮我安装一下这个工作流：<arkan-workflow 仓库地址或本地路径>"
-
-AI 将：
-1. 读取本文件了解档位规则
-2. 分析目标项目的文件结构，推断最匹配的档位
-3. 展示置信度推荐，等待用户确认
-4. 执行：`bash <arkan-workflow-path>/install.sh --type <tier> --target <project-dir> --no-interactive`
-
-**示例**：
-
+以 `backend` 档位为例，`design.md` 生成前必须通过工程审查：
 ```
-用户：帮我安装一下这个工作流：github.com/xxx/arkan-workflow
+工程审查状态：[阻断 / 通过 / 仅警告]
 
-AI：正在分析你的项目...
-    检测到：requirements.txt 含 pandas、sqlalchemy → Python 数据项目（置信度 90%）
-
-    ★ python-data  Python 数据项目 🐍  （置信度 90%）
-      backend      后端服务       📦  （置信度 8%）
-
-    确认安装 python-data 档位？[Y/n]
-
-用户：Y
-
-AI：（执行）bash ~/projects/arkan-workflow/install.sh --type python-data --target . --no-interactive
-    ✓ 工作流安装完成。运行 /wf 开始使用。
+阻断时 → 禁止生成 tasks.md，须先修改 proposal
 ```
+
+Gate 完全由 AI 自我执行，无需外部工具介入。
 
 ---
 
-### 档位说明（AI 参考）
+## 前置条件
 
-| 标识符 | 档位名称 | 用户描述 | 检测信号 |
-|-------|--------|--------|---------|
-| `backend` | 📦 后端服务 | 服务器 API、业务逻辑、数据库操作 | `package.json` 含 express/nest/koa（无前端依赖）；`pom.xml`；`go.mod`；`Cargo.toml` |
-| `python-data` | 🐍 Python 数据项目 | 数据分析、自动报表、数据处理脚本 | `requirements.txt` 含 pandas/sqlalchemy/pymysql/openpyxl |
-| `frontend` | 🎨 前端应用 | 网页界面、H5、React/Vue/小程序 | `package.json` 含 react/vue/next（无后端依赖） |
-| `fullstack` | 🔗 前后端合体 | 同一个仓库里既有前端界面又有后端服务 | `package.json` 同时含前端和后端依赖 |
-| `vibe` | ⚡ 轻量快速模式 | 个人项目、快速验证想法、不需要严格审查流程 | 无明确信号；代码库较小；无 CI；README 提及 prototype/poc/demo |
+- **openspec CLI** — 变更管理工具（`pip install openspec` 或参考 [openspec 文档]）
+- **Claude Code** 或 **Codex App**（至少一个）
+- 目标项目已初始化 `git`
 
 ---
 
-### Bootstrap 命令格式
+## AI 安装指南（供 AI 读取）
+
+> 本节为 LLM 参考信息。
+
+### 档位检测信号
+
+| 标识符 | 决定性信号（优先级 1） | 强信号（优先级 2） |
+|--------|---------------------|-----------------|
+| `python-data` | `requirements.txt` 含 pandas/sqlalchemy/pymysql/openpyxl | `pyproject.toml` + `notebooks/` 目录 |
+| `fullstack` | `package.json` 同时含前端依赖（react/vue/next）AND 后端依赖（express/nest/koa） | — |
+| `vibe` | README 含 prototype/poc/demo/vibe | 文件总数 < 50，无 CI |
+| `frontend` | `package.json` 含 react/vue/next（无后端依赖） | — |
+| `backend` | `pom.xml` / `go.mod` / `Cargo.toml` | `package.json` 含 express/nest/koa（无前端依赖） |
+
+**冲突规则**：Python 项目（含 `requirements.txt` 或 `pyproject.toml`）有 `templates/` 或 `static/` 目录时，**不计为前端信号**（这是 Jinja2/Flask 的标准结构）。
+
+### Bootstrap 命令
 
 ```bash
-bash <path-to-arkan-workflow>/install.sh --type <tier> --target <project-dir> --no-interactive
+bash <agentic-workflow-path>/install.sh --type <tier> --target <project-dir> --no-interactive
 ```
 
-| 参数 | 说明 | 示例 |
-|------|------|------|
-| `--type` | 档位标识符 | `python-data` |
-| `--target` | 目标项目目录 | `/path/to/myproject` 或 `.`（当前目录）|
-| `--no-interactive` | 非交互模式（AI 调用时使用） | — |
+---
+
+## License
+
+MIT

@@ -1,6 +1,9 @@
 ---
-description: 快速通道变更：跳过 design gate，直接生成 proposal + tasks。
-  适用于文案调整、样式修改、明确 bug 修复（≤3 文件，无架构/安全影响）。
+name: wf-quick
+description: |
+  快速通道：文案、样式、明确 bug，跳过 gate，直接生成 proposal + tasks。
+  适用于 ≤3 文件、无架构/安全影响、意图无歧义的小改动。
+  触发词：wf-quick、快速通道、快速修复、quick fix、小改动。
 ---
 
 快速通道变更。
@@ -8,7 +11,7 @@ description: 快速通道变更：跳过 design gate，直接生成 proposal + t
 首先确认此变更符合 openspec/config.yaml 中 quick_change_criteria 定义的全部条件：
 改动范围 ≤ 3 个文件、不涉及新功能/架构/安全敏感逻辑、意图无歧义。
 
-若不符合，告知用户改用 /openspec-propose 走完整通道。
+若不符合，告知用户改用 /wf-small 走完整通道。
 
 若符合，执行以下步骤：
 1. 从用户输入派生 kebab-case 变更名（加 `quick-` 前缀，例如 `quick-fix-date-format`）

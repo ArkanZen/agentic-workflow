@@ -6,7 +6,7 @@ context: |
   本项目为 Python 数据/报表类项目。openspec/specs/project.md 含完整上下文。
   AI 在生成工件时须先读取该文件。
 
-# 快速通道判定标准（满足以下全部条件时可用 /openspec-quick 跳过 design gate）
+# 快速通道判定标准（满足以下全部条件时可用 /wf-quick 跳过 design gate）
 quick_change_criteria: |
   以下情形均可走快速通道（缺一不可）：
   1. 改动范围 ≤ 3 个文件

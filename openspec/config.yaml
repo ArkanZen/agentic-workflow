@@ -4,7 +4,7 @@ context: |
   完整项目上下文见 openspec/specs/project.md。
   AI 在生成每个工件时须先读取该文件。
 
-# 快速通道判定标准（满足以下全部条件时可用 /openspec-quick 跳过 design gate）
+# 快速通道判定标准（满足以下全部条件时可用 /wf-quick 跳过 design gate）
 quick_change_criteria: |
   以下情形均可走快速通道（缺一不可）：
   1. 改动范围 ≤ 3 个文件

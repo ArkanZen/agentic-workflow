@@ -3,7 +3,7 @@ name: wf-install
 description: |
   工作流档位安装/切换/升级。AI 分析项目信号推荐档位，支持全新安装、档位切换和版本升级。
   3 种模式：INSTALL（全新安装）/ SWITCH（切换档位）/ UPGRADE（升级模板版本）。
-  触发词：wf-install、安装工作流、切换档位、install workflow。
+  仅当用户显式输入 /wf-install 时使用；不要因“安装工作流、切换档位、install workflow”等自然语言自动触发。
 ---
 
 工作流档位安装与切换。

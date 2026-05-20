@@ -178,7 +178,7 @@ bash ~/agentic-workflow/install.sh \
 
 ## 安装后的工作流
 
-安装完成后，在 Claude Code 或 Codex App 里直接运行对应模式命令：
+安装完成后，默认协作方式不变；只有在 Claude Code 或 Codex App 里显式输入 `/wf-*` 或 `/openspec-*` 命令时，才进入 OpenSpec + GStack 流程。
 
 | 命令 | 适用场景 | 实际用到的工具 | 缺少增强项时的影响 |
 |------|----------|----------------|--------------------|

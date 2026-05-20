@@ -167,8 +167,12 @@ if [[ "$SWITCH_MODE" == "true" ]]; then
   # 更新 .claude/CLAUDE.md 中的档位注释
   if [[ -f "$TARGET_DIR/.claude/CLAUDE.md" ]]; then
     sed -i.bak "s|^# arkan-workflow-tier: .*|# arkan-workflow-tier: ${ARG_TYPE}|" "$TARGET_DIR/.claude/CLAUDE.md"
+    sed -i.bak "s|<!-- arkan-workflow-tier: .* -->|<!-- arkan-workflow-tier: ${ARG_TYPE} -->|" "$TARGET_DIR/.claude/CLAUDE.md"
     if grep -q "^# arkan-workflow-version:" "$TARGET_DIR/.claude/CLAUDE.md"; then
       sed -i.bak "s|^# arkan-workflow-version: .*|# arkan-workflow-version: ${WORKFLOW_VERSION}|" "$TARGET_DIR/.claude/CLAUDE.md"
+    fi
+    if grep -q "<!-- arkan-workflow-version:" "$TARGET_DIR/.claude/CLAUDE.md"; then
+      sed -i.bak "s|<!-- arkan-workflow-version: .* -->|<!-- arkan-workflow-version: ${WORKFLOW_VERSION} -->|" "$TARGET_DIR/.claude/CLAUDE.md"
     fi
     rm -f "$TARGET_DIR/.claude/CLAUDE.md.bak"
     ok ".claude/CLAUDE.md 档位注释已更新"
@@ -451,6 +455,121 @@ remove_obsolete_path() {
   fi
 }
 
+# 辅助：渲染受控工作流说明块，安装和升级时整块替换，避免句子级迁移逻辑持续膨胀
+render_workflow_block() {
+  local host="$1" tier="$2"
+  cat << WORKFLOWBLOCK
+<!-- agentic-workflow:start -->
+## OpenSpec + GStack 工作流
+<!-- arkan-workflow-tier: ${tier} -->
+<!-- arkan-workflow-version: ${WORKFLOW_VERSION} -->
+
+默认不启用本工作流。仅当用户显式输入 \`/wf-*\` 或 \`/openspec-*\` 命令时，才进入 OpenSpec + GStack 流程；普通开发请求按项目常规协作方式处理。
+
+### 工作流命令
+- \`/wf-quick\` — 快速通道（文案/样式/明确 bug，跳过 gate）
+- \`/wf-small\` — 小需求完整通道（OpenSpec + Gate）
+- \`/wf-complex\` — 复杂后端/架构变更（探索 + OpenSpec + Gate）
+- \`/wf-debug\` — Debug / 重构 / 单测（直接排查或实现）
+- \`/wf-plan\` — 产品/架构方案（先评估是否值得做）
+- \`/openspec-propose\` — 完整通道（proposal + design gate + tasks）
+- \`/openspec-apply-change\` — 执行 tasks 实现代码
+- \`/openspec-archive-change\` — 归档变更
+- \`/openspec-explore\` — 探索思考
+
+### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
+需先安装官方 GStack。${host} 安装方式：
+WORKFLOWBLOCK
+
+  if [[ "$host" == "Claude Code" ]]; then
+    cat << 'WORKFLOWBLOCK'
+`git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup`
+
+- `/plan-eng-review` — 工程审查（完整通道必须）
+- `/cso` — 安全审查（涉及配置/凭证/外部调用时）
+- `/review` — 代码审查（apply 后运行）
+WORKFLOWBLOCK
+  else
+    cat << 'WORKFLOWBLOCK'
+`git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.codex/skills/gstack && cd ~/.codex/skills/gstack && ./setup --host codex`
+
+- `/gstack-plan-eng-review` — 工程审查（完整通道必须）
+- `/gstack-cso` — 安全审查（涉及配置/凭证时必须）
+- `/gstack-review` — 代码审查（apply 后运行）
+WORKFLOWBLOCK
+  fi
+
+  cat << 'WORKFLOWBLOCK'
+
+### Gate 规则
+见 openspec/config.yaml。design.md 顶部工程审查状态为「阻断」时，
+不得生成 tasks.md，须先修改 proposal。
+<!-- agentic-workflow:end -->
+WORKFLOWBLOCK
+}
+
+# 辅助：写入或更新受控工作流说明块；旧版无 marker 段落只迁移一次
+upsert_workflow_block() {
+  local file="$1" host="$2" tier="$3" label="$4"
+  local block_file tmp_file
+  block_file="$(mktemp)"
+  tmp_file="$(mktemp)"
+  render_workflow_block "$host" "$tier" > "$block_file"
+
+  if grep -q "<!-- agentic-workflow:start -->" "$file" 2>/dev/null; then
+    awk -v start="<!-- agentic-workflow:start -->" \
+        -v end="<!-- agentic-workflow:end -->" \
+        -v block="$block_file" '
+      BEGIN {
+        while ((getline line < block) > 0) replacement = replacement line ORS
+        close(block)
+      }
+      $0 == start {
+        printf "%s", replacement
+        in_block = 1
+        next
+      }
+      $0 == end && in_block {
+        in_block = 0
+        next
+      }
+      !in_block { print }
+    ' "$file" > "$tmp_file"
+    mv "$tmp_file" "$file"
+    ok "${label} 工作流块已更新"
+    INSTALLED+=("${label} workflow block")
+  elif grep -q "^## OpenSpec + GStack 工作流$" "$file" 2>/dev/null; then
+    awk -v title="## OpenSpec + GStack 工作流" \
+        -v block="$block_file" '
+      BEGIN {
+        while ((getline line < block) > 0) replacement = replacement line ORS
+        close(block)
+      }
+      $0 == title {
+        printf "%s", replacement
+        replaced = 1
+        exit
+      }
+      { print }
+      END {
+        if (!replaced) printf "\n%s", replacement
+      }
+    ' "$file" > "$tmp_file"
+    mv "$tmp_file" "$file"
+    ok "${label} 旧工作流段落已迁移为受控块"
+    INSTALLED+=("${label} workflow block")
+  else
+    {
+      printf "\n"
+      cat "$block_file"
+    } >> "$file"
+    ok "${label} 工作流块已追加"
+    INSTALLED+=("${label} workflow block")
+  fi
+
+  rm -f "$block_file" "$tmp_file"
+}
+
 echo ""
 
 # — openspec/config.yaml ───────────────────────────────────────────────────────
@@ -570,39 +689,18 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
 # arkan-workflow-version: ${WORKFLOW_VERSION}
 
 Claude Code 工作流说明（补充 AGENTS.md）。
-
-## OpenSpec + GStack 工作流
-
-所有功能变更通过 OpenSpec 状态机管理。禁止直接修改代码而不经过 propose 阶段。
-
-### 工作流命令
-- \`/wf-quick\` — 快速通道（文案/样式/明确 bug，跳过 gate）
-- \`/wf-small\` — 小需求完整通道（OpenSpec + Gate）
-- \`/wf-complex\` — 复杂后端/架构变更（探索 + OpenSpec + Gate）
-- \`/wf-debug\` — Debug / 重构 / 单测（直接排查或实现）
-- \`/wf-plan\` — 产品/架构方案（先评估是否值得做）
-- \`/openspec-propose\` — 完整通道（proposal + design gate + tasks）
-- \`/openspec-apply-change\` — 执行 tasks 实现代码
-- \`/openspec-archive-change\` — 归档变更
-
-### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
-需先安装官方 GStack。Claude Code 安装方式：
-\`git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup\`
-
-- \`/plan-eng-review\` — 工程审查（完整通道必须）
-- \`/cso\` — 安全审查（涉及配置/凭证/外部调用时）
-- \`/review\` — 代码审查（apply 后运行）
-
-### Gate 规则
-见 openspec/config.yaml。design.md 顶部工程审查状态为「阻断」时，
-不得生成 tasks.md，须先修改 proposal。
 CLAUDEMD
     ok ".claude/CLAUDE.md"
     INSTALLED+=(".claude/CLAUDE.md")
-  else
-    info ".claude/CLAUDE.md 已存在（跳过）"
-    SKIPPED+=(".claude/CLAUDE.md")
   fi
+  if grep -q "^# arkan-workflow-tier:" "$TARGET_DIR/.claude/CLAUDE.md" 2>/dev/null; then
+    sed -i.bak "s|^# arkan-workflow-tier: .*|# arkan-workflow-tier: ${PROJECT_TYPE}|" "$TARGET_DIR/.claude/CLAUDE.md"
+  fi
+  if grep -q "^# arkan-workflow-version:" "$TARGET_DIR/.claude/CLAUDE.md" 2>/dev/null; then
+    sed -i.bak "s|^# arkan-workflow-version: .*|# arkan-workflow-version: ${WORKFLOW_VERSION}|" "$TARGET_DIR/.claude/CLAUDE.md"
+  fi
+  rm -f "$TARGET_DIR/.claude/CLAUDE.md.bak"
+  upsert_workflow_block "$TARGET_DIR/.claude/CLAUDE.md" "Claude Code" "$PROJECT_TYPE" ".claude/CLAUDE.md"
 fi
 
 # — Codex App ──────────────────────────────────────────────────────────────────
@@ -632,44 +730,7 @@ fi
 
 # — AGENTS.md 追加 ─────────────────────────────────────────────────────────────
 if [[ -f "$TARGET_DIR/AGENTS.md" ]]; then
-  if grep -q "OpenSpec + GStack 工作流" "$TARGET_DIR/AGENTS.md" 2>/dev/null; then
-    info "AGENTS.md 已含工作流段落（跳过）"
-    SKIPPED+=("AGENTS.md workflow section")
-  else
-    cat >> "$TARGET_DIR/AGENTS.md" << AGENTSECTION
-
-## OpenSpec + GStack 工作流
-<!-- arkan-workflow-tier: ${PROJECT_TYPE} -->
-<!-- arkan-workflow-version: ${WORKFLOW_VERSION} -->
-
-所有功能变更通过 OpenSpec 状态机管理。禁止直接修改代码而不经过 propose 阶段。
-
-### 工作流命令
-- \`/wf-quick\` — 快速通道（文案/样式/明确 bug，跳过 design gate）
-- \`/wf-small\` — 小需求完整通道
-- \`/wf-complex\` — 复杂后端/架构变更
-- \`/wf-debug\` — Debug / 重构 / 单测
-- \`/wf-plan\` — 产品/架构方案
-- \`/openspec-propose\` — 发起新变更（完整通道）
-- \`/openspec-apply-change\` — 实现代码
-- \`/openspec-archive-change\` — 归档变更
-- \`/openspec-explore\` — 探索思考
-
-### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
-需先安装官方 GStack。Codex 安装方式：
-\`git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.codex/skills/gstack && cd ~/.codex/skills/gstack && ./setup --host codex\`
-
-- \`/gstack-plan-eng-review\` — 工程审查（完整通道必须）
-- \`/gstack-cso\` — 安全审查（涉及配置/凭证时必须）
-- \`/gstack-review\` — 代码审查（apply 后运行）
-
-### Gate 规则
-见 openspec/config.yaml。design.md 顶部工程审查状态为「阻断」时，
-不得生成 tasks.md，须先修改 proposal。
-AGENTSECTION
-    ok "AGENTS.md（追加 workflow 段落）"
-    INSTALLED+=("AGENTS.md")
-  fi
+  upsert_workflow_block "$TARGET_DIR/AGENTS.md" "Codex" "$PROJECT_TYPE" "AGENTS.md"
 else
   info "AGENTS.md 不存在（跳过）"
 fi

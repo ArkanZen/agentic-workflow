@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# arkan-workflow/install.sh
+# agentic-workflow/install.sh
 # 交互式工作流安装脚本
 
 set -euo pipefail
@@ -82,10 +82,37 @@ ask_menu() {
   done
 }
 
+# ── 工作流标记 ────────────────────────────────────────────────────────────────
+WORKFLOW_MARKER_PREFIX="agentic-workflow"
+
+# 检查文件是否包含指定类型的行注释标记
+has_hash_marker() {
+  local file="$1" key="$2"
+  grep -q "^# ${WORKFLOW_MARKER_PREFIX}-${key}:" "$file" 2>/dev/null
+}
+
+# 检查文件是否包含指定类型的 HTML 注释标记
+has_html_marker() {
+  local file="$1" key="$2"
+  grep -q "<!-- ${WORKFLOW_MARKER_PREFIX}-${key}:" "$file" 2>/dev/null
+}
+
+# 更新行注释标记的值
+update_hash_marker() {
+  local file="$1" key="$2" value="$3"
+  sed -i.bak "s|^# ${WORKFLOW_MARKER_PREFIX}-${key}: .*|# ${WORKFLOW_MARKER_PREFIX}-${key}: ${value}|" "$file"
+}
+
+# 更新 HTML 注释标记的值
+update_html_marker() {
+  local file="$1" key="$2" value="$3"
+  sed -i.bak "s|<!-- ${WORKFLOW_MARKER_PREFIX}-${key}: .* -->|<!-- ${WORKFLOW_MARKER_PREFIX}-${key}: ${value} -->|" "$file"
+}
+
 # ── Banner ─────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════╗${RESET}"
-echo -e "${BOLD}${CYAN}║   arkan-workflow 安装脚本                    ║${RESET}"
+echo -e "${BOLD}${CYAN}║   agentic-workflow 安装脚本                 ║${RESET}"
 echo -e "${BOLD}${CYAN}║   OpenSpec + GStack 双生态工作流             ║${RESET}"
 echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════╝${RESET}"
 echo -e "  ${CYAN}版本:${RESET} ${WORKFLOW_VERSION}"
@@ -168,22 +195,22 @@ if [[ "$SWITCH_MODE" == "true" ]]; then
   ok "档位已切换到: $ARG_TYPE"
   # 更新 .claude/CLAUDE.md 中的档位注释
   if [[ -f "$TARGET_DIR/.claude/CLAUDE.md" ]]; then
-    sed -i.bak "s|^# arkan-workflow-tier: .*|# arkan-workflow-tier: ${ARG_TYPE}|" "$TARGET_DIR/.claude/CLAUDE.md"
-    sed -i.bak "s|<!-- arkan-workflow-tier: .* -->|<!-- arkan-workflow-tier: ${ARG_TYPE} -->|" "$TARGET_DIR/.claude/CLAUDE.md"
-    if grep -q "^# arkan-workflow-version:" "$TARGET_DIR/.claude/CLAUDE.md"; then
-      sed -i.bak "s|^# arkan-workflow-version: .*|# arkan-workflow-version: ${WORKFLOW_VERSION}|" "$TARGET_DIR/.claude/CLAUDE.md"
+    update_hash_marker "$TARGET_DIR/.claude/CLAUDE.md" "tier" "$ARG_TYPE"
+    update_html_marker "$TARGET_DIR/.claude/CLAUDE.md" "tier" "$ARG_TYPE"
+    if has_hash_marker "$TARGET_DIR/.claude/CLAUDE.md" "version"; then
+      update_hash_marker "$TARGET_DIR/.claude/CLAUDE.md" "version" "$WORKFLOW_VERSION"
     fi
-    if grep -q "<!-- arkan-workflow-version:" "$TARGET_DIR/.claude/CLAUDE.md"; then
-      sed -i.bak "s|<!-- arkan-workflow-version: .* -->|<!-- arkan-workflow-version: ${WORKFLOW_VERSION} -->|" "$TARGET_DIR/.claude/CLAUDE.md"
+    if has_html_marker "$TARGET_DIR/.claude/CLAUDE.md" "version"; then
+      update_html_marker "$TARGET_DIR/.claude/CLAUDE.md" "version" "$WORKFLOW_VERSION"
     fi
     rm -f "$TARGET_DIR/.claude/CLAUDE.md.bak"
     ok ".claude/CLAUDE.md 档位注释已更新"
   fi
   # 更新 AGENTS.md 中的档位注释
   if [[ -f "$TARGET_DIR/AGENTS.md" ]]; then
-    sed -i.bak "s|<!-- arkan-workflow-tier: .* -->|<!-- arkan-workflow-tier: ${ARG_TYPE} -->|" "$TARGET_DIR/AGENTS.md"
-    if grep -q "<!-- arkan-workflow-version:" "$TARGET_DIR/AGENTS.md"; then
-      sed -i.bak "s|<!-- arkan-workflow-version: .* -->|<!-- arkan-workflow-version: ${WORKFLOW_VERSION} -->|" "$TARGET_DIR/AGENTS.md"
+    update_html_marker "$TARGET_DIR/AGENTS.md" "tier" "$ARG_TYPE"
+    if has_html_marker "$TARGET_DIR/AGENTS.md" "version"; then
+      update_html_marker "$TARGET_DIR/AGENTS.md" "version" "$WORKFLOW_VERSION"
     fi
     rm -f "$TARGET_DIR/AGENTS.md.bak"
     ok "AGENTS.md 档位注释已更新"
@@ -350,14 +377,14 @@ EXISTING_CODEX_SKILLS=false
 if [[ "$EXISTING_CONFIG" == "true" ]]; then
   if grep -q "quick_change_criteria" "$TARGET_DIR/openspec/config.yaml" 2>/dev/null; then
     EXISTING_WORKFLOW=true
-    warn "检测到已有 arkan-workflow 配置（openspec/config.yaml 含 quick_change_criteria）"
+    warn "检测到已有 agentic-workflow 配置（openspec/config.yaml 含 quick_change_criteria）"
     info "本次安装为更新模式"
     if [[ "$NO_INTERACTIVE" == "true" ]]; then
       UPGRADE_MODE=true
       info "非交互更新将覆盖受控工作流模板"
     fi
   else
-    info "检测到现有 openspec/config.yaml（非 arkan-workflow 模板），将提示覆盖"
+    info "检测到现有 openspec/config.yaml（非 agentic-workflow 模板），将提示覆盖"
   fi
 else
   ok "全新安装"
@@ -476,8 +503,8 @@ render_workflow_block() {
   cat << WORKFLOWBLOCK
 <!-- agentic-workflow:start -->
 ## OpenSpec + GStack 工作流
-<!-- arkan-workflow-tier: ${tier} -->
-<!-- arkan-workflow-version: ${WORKFLOW_VERSION} -->
+<!-- ${WORKFLOW_MARKER_PREFIX}-tier: ${tier} -->
+<!-- ${WORKFLOW_MARKER_PREFIX}-version: ${WORKFLOW_VERSION} -->
 
 默认不启用本工作流。仅当用户显式输入 \`/wf-*\` 或 \`/openspec-*\` 命令时，才进入 OpenSpec + GStack 流程；普通开发请求按项目常规协作方式处理。
 
@@ -700,19 +727,19 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
     mkdir -p "$TARGET_DIR/.claude"
     cat > "$TARGET_DIR/.claude/CLAUDE.md" << CLAUDEMD
 # CLAUDE.md
-# arkan-workflow-tier: ${PROJECT_TYPE}
-# arkan-workflow-version: ${WORKFLOW_VERSION}
+# ${WORKFLOW_MARKER_PREFIX}-tier: ${PROJECT_TYPE}
+# ${WORKFLOW_MARKER_PREFIX}-version: ${WORKFLOW_VERSION}
 
 Claude Code 工作流说明（补充 AGENTS.md）。
 CLAUDEMD
     ok ".claude/CLAUDE.md"
     INSTALLED+=(".claude/CLAUDE.md")
   fi
-  if grep -q "^# arkan-workflow-tier:" "$TARGET_DIR/.claude/CLAUDE.md" 2>/dev/null; then
-    sed -i.bak "s|^# arkan-workflow-tier: .*|# arkan-workflow-tier: ${PROJECT_TYPE}|" "$TARGET_DIR/.claude/CLAUDE.md"
+  if has_hash_marker "$TARGET_DIR/.claude/CLAUDE.md" "tier"; then
+    update_hash_marker "$TARGET_DIR/.claude/CLAUDE.md" "tier" "$PROJECT_TYPE"
   fi
-  if grep -q "^# arkan-workflow-version:" "$TARGET_DIR/.claude/CLAUDE.md" 2>/dev/null; then
-    sed -i.bak "s|^# arkan-workflow-version: .*|# arkan-workflow-version: ${WORKFLOW_VERSION}|" "$TARGET_DIR/.claude/CLAUDE.md"
+  if has_hash_marker "$TARGET_DIR/.claude/CLAUDE.md" "version"; then
+    update_hash_marker "$TARGET_DIR/.claude/CLAUDE.md" "version" "$WORKFLOW_VERSION"
   fi
   rm -f "$TARGET_DIR/.claude/CLAUDE.md.bak"
   upsert_workflow_block "$TARGET_DIR/.claude/CLAUDE.md" "Claude Code" "$PROJECT_TYPE" ".claude/CLAUDE.md"
@@ -777,7 +804,7 @@ fi
 if grep -q "TODO: 填写以下各节" "$TARGET_DIR/openspec/specs/system.md" 2>/dev/null; then
   MANUAL_STEPS+=("编辑 openspec/specs/system.md — 填写模块结构、数据流、踩坑清单")
 fi
-MANUAL_STEPS+=("git add openspec/ .claude/ .codex/ AGENTS.md && git commit -m 'feat: install arkan-workflow'")
+MANUAL_STEPS+=("git add openspec/ .claude/ .codex/ AGENTS.md && git commit -m 'feat: install agentic workflow'")
 
 echo -e "  ${BOLD}后续步骤：${RESET}"
 for i in "${!MANUAL_STEPS[@]}"; do

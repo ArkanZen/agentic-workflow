@@ -1,6 +1,6 @@
 schema: spec-driven
-# arkan-workflow-tier: frontend
-# arkan-workflow-version: 1.1.1
+# agentic-workflow-tier: frontend
+# agentic-workflow-version: 1.1.2
 
 context: |
   完整项目上下文见 openspec/specs/project.md。

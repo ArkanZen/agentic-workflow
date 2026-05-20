@@ -2,7 +2,7 @@
 
 **日期**：2026-05-19  
 **状态**：已审批，待实施  
-**仓库**：`/Users/ryan/aiworkspace/arkan-workflow`（工作流模板中心仓库）  
+**仓库**：`/Users/ryan/aiworkspace/agentic-workflow`（工作流模板中心仓库）  
 **适用项目**：plutus-daily-report（主示例）；threea-cup、fe-backend-mobius 同理适用  
 
 ---
@@ -27,7 +27,7 @@
 
 `openspec/` 目录是两个 CLI 的共享状态；gate 逻辑住在 `openspec/config.yaml` 的 `rules:`；两个 CLI 通过名称相同的 skill 实现审查对等。人在两个 CLI 之间切换时，只切换工具，不切换工件。
 
-`arkan-workflow` 是所有工作流文件的**唯一来源（source of truth）**。Codex skill 模板、Claude 命令模板、openspec 配置模板全部维护在此处，各项目通过安装步骤从这里获取。
+`agentic-workflow` 是所有工作流文件的**唯一来源（source of truth）**。Codex skill 模板、Claude 命令模板、openspec 配置模板全部维护在此处，各项目通过安装步骤从这里获取。
 
 ### 三层结构
 
@@ -59,7 +59,7 @@
 └──────────────────────┘  └──────────────────────────┘
         ↑                          ↑
         └──────────────────────────┘
-          模板均来自 arkan-workflow/templates/
+          模板均来自 agentic-workflow/templates/
 ```
 
 ### 工作流状态机
@@ -89,10 +89,10 @@ propose → [工程审查 gate] → design → [确认通过] → tasks → appl
 
 ## 二、文件树
 
-### arkan-workflow（模板中心仓库）
+### agentic-workflow（模板中心仓库）
 
 ```
-/Users/ryan/aiworkspace/arkan-workflow/
+/Users/ryan/aiworkspace/agentic-workflow/
 ├── docs/
 │   └── specs/
 │       └── 2026-05-19-openspec-gstack-workflow-design.md  ← 本文件
@@ -126,7 +126,7 @@ propose → [工程审查 gate] → design → [确认通过] → tasks → appl
 ```
 /Users/ryan/aiworkspace/plutus-daliy-report/
 ├── openspec/                              ← 两个 CLI 共享，只此一份
-│   ├── config.yaml                        ← 从 arkan-workflow/templates/openspec/config-backend.yaml 安装
+│   ├── config.yaml                        ← 从 agentic-workflow/templates/openspec/config-backend.yaml 安装
 │   ├── specs/
 │   │   ├── system.md                      ← 项目专属：逆向提取的系统级 baseline
 │   │   └── project.md                     ← 项目专属：技术栈、约束、安全规定
@@ -138,17 +138,17 @@ propose → [工程审查 gate] → design → [确认通过] → tasks → appl
 ├── .claude/
 │   ├── CLAUDE.md                          ← 追加 workflow 段落
 │   └── commands/
-│       └── openspec-quick.md              ← 从 arkan-workflow/templates/claude/commands/ 安装
+│       └── openspec-quick.md              ← 从 agentic-workflow/templates/claude/commands/ 安装
 ├── .codex/
 │   └── skills/
 │       ├── openspec-propose/              ← 已有
 │       ├── openspec-apply-change/         ← 已有
 │       ├── openspec-archive-change/       ← 已有
 │       ├── openspec-explore/              ← 已有
-│       ├── gstack-plan-eng-review/        ← 从 arkan-workflow/templates/codex/skills/ 安装
-│       ├── gstack-cso/                    ← 从 arkan-workflow/templates/codex/skills/ 安装
-│       ├── gstack-review/                 ← 从 arkan-workflow/templates/codex/skills/ 安装
-│       └── openspec-quick/                ← 从 arkan-workflow/templates/codex/skills/ 安装
+│       ├── gstack-plan-eng-review/        ← 从 agentic-workflow/templates/codex/skills/ 安装
+│       ├── gstack-cso/                    ← 从 agentic-workflow/templates/codex/skills/ 安装
+│       ├── gstack-review/                 ← 从 agentic-workflow/templates/codex/skills/ 安装
+│       └── openspec-quick/                ← 从 agentic-workflow/templates/codex/skills/ 安装
 └── AGENTS.md                              ← 追加 workflow 段落（两个 CLI 共读）
 ```
 
@@ -306,7 +306,7 @@ description: |
 
 ### 需要移植的 Skill
 
-| GStack 源路径 | arkan-workflow 模板路径 | 适用场景 |
+| GStack 源路径 | agentic-workflow 模板路径 | 适用场景 |
 |--------------|----------------------|---------|
 | `~/.gstack/repos/gstack/.hermes/skills/gstack-plan-eng-review/SKILL.md` | `templates/codex/skills/gstack-plan-eng-review/SKILL.md` | 所有项目，design gate 主审查 |
 | `~/.gstack/repos/gstack/.hermes/skills/gstack-plan-design-review/SKILL.md` | `templates/codex/skills/gstack-plan-design-review/SKILL.md` | 前端项目，UI 变更审查 |
@@ -419,7 +419,7 @@ description: |
 
 ## 七、初始化步骤
 
-### arkan-workflow 安装脚本（一次性，各项目共用）
+### agentic-workflow 安装脚本（一次性，各项目共用）
 
 ```bash
 # 1. 进入目标项目
@@ -428,8 +428,8 @@ cd /Users/ryan/aiworkspace/plutus-daliy-report   # 或其他项目
 # 2. 初始化 OpenSpec（--force 覆盖已有 config）
 openspec init --tools claude,codex --profile core --force
 
-# 3. 从 arkan-workflow 复制对应模板
-WORKFLOW=/Users/ryan/aiworkspace/arkan-workflow
+# 3. 从 agentic-workflow 复制对应模板
+WORKFLOW=/Users/ryan/aiworkspace/agentic-workflow
 
 # openspec config（后端项目用 config-backend.yaml）
 cp $WORKFLOW/templates/openspec/config-backend.yaml openspec/config.yaml
@@ -623,7 +623,7 @@ description: |
 | 共享工件 | `openspec/` 目录 | 同一份，无差异 |
 | Gate 机制 | `openspec/config.yaml` rules | 同一份 config，名称对齐 |
 | Mode 4 产品方案 | GStack `/office-hours` 全功能 | 降级为 `/gstack-plan-eng-review` 替代 |
-| 模板来源 | `arkan-workflow/templates/` | 同上 |
+| 模板来源 | `agentic-workflow/templates/` | 同上 |
 | 维护点 | GStack 自动升级 | 移植 skill 需手动同步 GStack 更新 |
 | 浏览器 QA | `/qa` 全功能 | 无浏览器，需补充 staging URL 测试 |
 
@@ -635,7 +635,7 @@ description: |
    AI 判断是否符合 quick_change_criteria 时可能偏宽松。预防：config.yaml 中判定条件写「缺一不可」，且在 AGENTS.md 中明确「涉及数据流/接口/配置一律走完整通道」。
 
 2. **Codex 移植 skill 与 GStack 原版审查逻辑漂移**  
-   GStack 持续更新，移植后的 Codex skill 会滞后。预防：移植时在 skill 头部注明源版本号和移植日期；每季度执行一次 diff 对比并更新 arkan-workflow 模板。
+   GStack 持续更新，移植后的 Codex skill 会滞后。预防：移植时在 skill 头部注明源版本号和移植日期；每季度执行一次 diff 对比并更新 agentic-workflow 模板。
 
 3. **design.md 关卡章节格式不统一**  
    AI 可能改变「通过 / 仅警告 / 阻断」措辞，导致 tasks gate check 读取失败。预防：config.yaml rules 中用精确格式示例，tasks rules 中明确「读取关键字为『阻断』」。

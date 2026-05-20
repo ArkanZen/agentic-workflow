@@ -14,15 +14,15 @@ description: |
 
 ```bash
 test -f openspec/config.yaml && echo "EXISTS" || echo "NOT_FOUND"
-grep "arkan-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VERSION"
+grep "agentic-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VERSION"
 ```
 
 路由规则：
 - 若文件**不存在** → 进入 **INSTALL 模式**
-- 若文件**存在** AND **不含** `arkan-workflow-version:` 注释 → 进入 **UPGRADE 模式**
-- 若文件**存在** AND 含 `arkan-workflow-version:` 注释：
-  1. 询问或确认 arkan-workflow 仓库路径。
-  2. 读取 `<arkan-workflow-path>/VERSION`，作为可安装的最新版本。
+- 若文件**存在** AND **不含**工作流版本注释 → 进入 **UPGRADE 模式**
+- 若文件**存在** AND 含工作流版本注释：
+  1. 询问或确认 agentic-workflow 仓库路径。
+  2. 读取 `<agentic-workflow-path>/VERSION`，作为可安装的最新版本。
   3. 将 `openspec/config.yaml` 中的当前版本与仓库版本按语义版本号比较。
   4. 若当前版本低于仓库版本 → 进入 **UPGRADE 模式**。
   5. 若当前版本等于仓库版本 → 进入 **SWITCH 模式**。
@@ -36,7 +36,7 @@ grep "arkan-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VERS
 
 进入原因包括：
 - `openspec/config.yaml` 存在但缺少版本标记，说明工作流是在引入版本跟踪之前安装的。
-- 已安装版本低于 arkan-workflow 仓库 `VERSION` 中记录的版本。
+- 已安装版本低于 agentic-workflow 仓库 `VERSION` 中记录的版本。
 
 展示以下提示（用 AskUserQuestion）：
 ```
@@ -52,11 +52,11 @@ grep "arkan-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VERS
 ```
 
 若用户选择「升级配置」：
-- 询问 arkan-workflow 仓库路径（同 INSTALL 模式步骤 4），然后执行：
+- 询问 agentic-workflow 仓库路径（同 INSTALL 模式步骤 4），然后执行：
   ```bash
-  bash "<arkan-workflow-path>/install.sh" --type <detected-or-asked-tier> --target <current-dir> --no-interactive --upgrade
+  bash "<agentic-workflow-path>/install.sh" --type <detected-or-asked-tier> --target <current-dir> --no-interactive --upgrade
   ```
-  其中档位通过 `grep "arkan-workflow-tier:" openspec/config.yaml` 读取当前档位。
+  其中档位通过 `grep "agentic-workflow-tier:" openspec/config.yaml` 读取当前档位。
 
 若用户选择「切换档位」：进入 **SWITCH 模式**。
 
@@ -147,20 +147,20 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 
 ### 步骤 4：执行安装
 
-确认档位后，询问 arkan-workflow 仓库路径（若用户未提供）：
+确认档位后，询问 agentic-workflow 仓库路径（若用户未提供）：
 
 ```
-请输入 arkan-workflow 仓库的本地路径（例如：~/workspace/arkan-workflow）：
+请输入 agentic-workflow 仓库的本地路径（例如：~/workspace/agentic-workflow）：
 ```
 
 然后执行安装：
 
-在执行前验证路径：test -f "<arkan-workflow-path>/install.sh"
+在执行前验证路径：test -f "<agentic-workflow-path>/install.sh"
 若文件不存在，告知用户「路径无效，未找到 install.sh」，重新询问路径。
 确保路径在 bash 命令中用引号包裹，以处理含空格的路径。
 
 ```bash
-bash "<arkan-workflow-path>/install.sh" --type <tier> --target <current-dir> --no-interactive
+bash "<agentic-workflow-path>/install.sh" --type <tier> --target <current-dir> --no-interactive
 ```
 
 其中 `<current-dir>` 为当前工作目录的绝对路径，用 `pwd` 获取。
@@ -198,15 +198,15 @@ done
 
 ### 步骤 2：读取当前档位
 
-用 grep 读取 openspec/config.yaml 第2行的 arkan-workflow-tier 注释：
-  grep "arkan-workflow-tier:" openspec/config.yaml
-  例如输出：# arkan-workflow-tier: backend → 当前档位为 backend
+用 grep 读取 openspec/config.yaml 第2行的工作流档位注释：
+  grep "agentic-workflow-tier:" openspec/config.yaml
+  例如输出：# agentic-workflow-tier: backend → 当前档位为 backend
   若该注释不存在，显示「当前档位：未知」
 
-### 步骤 3：获取 arkan-workflow 路径
+### 步骤 3：获取 agentic-workflow 路径
 
-若尚未知道 arkan-workflow 的本地路径，询问用户：
-「arkan-workflow 仓库在哪里？（输入路径，例：~/projects/arkan-workflow）」
+若尚未知道 agentic-workflow 的本地路径，询问用户：
+「agentic-workflow 仓库在哪里？（输入路径，例：~/projects/agentic-workflow）」
 在执行前用 `test -f <path>/install.sh` 验证路径有效，若无效则提示重新输入。
 
 ### 步骤 4：展示档位选择
@@ -232,14 +232,14 @@ done
 
 用户选择目标档位后：
 
-1. 定位对应模板文件：`<arkan-workflow-path>/templates/openspec/config-<tier>.yaml`
+1. 定位对应模板文件：`<agentic-workflow-path>/templates/openspec/config-<tier>.yaml`
 2. 备份当前配置：
    ```bash
    cp openspec/config.yaml openspec/config.yaml.bak
    ```
 3. 复制新配置：
    ```bash
-   cp <arkan-workflow-path>/templates/openspec/config-<tier>.yaml openspec/config.yaml
+   cp <agentic-workflow-path>/templates/openspec/config-<tier>.yaml openspec/config.yaml
    ```
 4. 若目标档位为 `fullstack`，额外创建目录：
    ```bash

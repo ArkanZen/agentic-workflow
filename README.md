@@ -157,7 +157,7 @@ bash ~/agentic-workflow/install.sh \
 |------|------|
 | `--type <档位>` | backend / python-data / frontend / fullstack / vibe |
 | `--target <目录>` | 目标项目目录（默认交互询问） |
-| `--no-interactive` | 完全非交互；全新安装时冲突文件默认跳过，检测到已安装 arkan-workflow 时进入更新模式 |
+| `--no-interactive` | 完全非交互；全新安装时冲突文件默认跳过，检测到已安装 agentic-workflow 时进入更新模式 |
 | `--upgrade` | 升级受控工作流模板，配合 `--no-interactive` 时覆盖已安装的 wf 命令和 skill |
 | `--switch` | 仅替换 config.yaml，切换档位（不重新安装） |
 | `--version` | 输出当前 agentic-workflow 模板版本 |
@@ -169,11 +169,11 @@ bash ~/agentic-workflow/install.sh \
 仓库根目录的 `VERSION` 是工作流模板版本的唯一来源，`CHANGELOG.md` 记录每次发布的行为变化。安装后的项目会在 `openspec/config.yaml` 写入：
 
 ```yaml
-# arkan-workflow-tier: backend
-# arkan-workflow-version: 1.1.1
+# agentic-workflow-tier: backend
+# agentic-workflow-version: 1.1.2
 ```
 
-后续其他人更新工作流时，先拉取本仓库最新代码，再在目标项目运行 `/wf-install`。AI 会读取目标项目中的 `arkan-workflow-version`，再对比本仓库 `VERSION`：版本落后时进入升级模式，版本一致时进入切换档位模式。
+后续其他人更新工作流时，先拉取本仓库最新代码，再在目标项目运行 `/wf-install`。AI 会读取目标项目中的 `agentic-workflow-version`，再对比本仓库 `VERSION`：版本落后时进入升级模式，版本一致时进入切换档位模式。
 
 ---
 

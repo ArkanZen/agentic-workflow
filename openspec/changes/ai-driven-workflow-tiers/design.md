@@ -9,7 +9,7 @@
 
 ## Context
 
-arkan-workflow 目前提供 backend / frontend 两个档位，安装入口为交互式 `install.sh`。现有架构存在两个问题：
+agentic-workflow 目前提供 backend / frontend 两个档位，安装入口为交互式 `install.sh`。现有架构存在两个问题：
 
 1. **档位不足**：Python 数据报表、全栈 monorepo、轻量原型无对应档位，用户只能选一个"最近似"的
 2. **Bootstrap 悖论**：`/wf-install` 作为安装命令无法自举——slash command 需先安装才能使用，无法实现"一句话安装"

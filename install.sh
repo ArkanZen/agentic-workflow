@@ -26,6 +26,7 @@ fi
 # ── 参数解析 ──────────────────────────────────────────────────────────────────
 NO_INTERACTIVE=false
 SWITCH_MODE=false
+UPGRADE_MODE=false
 ARG_TYPE=""
 ARG_TARGET=""
 
@@ -38,6 +39,7 @@ while [[ $# -gt 0 ]]; do
       [[ $# -lt 2 ]] && { err "--target 需要一个路径"; exit 1; }
       ARG_TARGET="$2"; shift 2 ;;
     --no-interactive) NO_INTERACTIVE=true; shift ;;
+    --upgrade)        UPGRADE_MODE=true; shift ;;
     --switch)         SWITCH_MODE=true; shift ;;
     --version)        echo "$WORKFLOW_VERSION"; exit 0 ;;
     -*)               err "未知参数: $1"; exit 1 ;;
@@ -350,6 +352,10 @@ if [[ "$EXISTING_CONFIG" == "true" ]]; then
     EXISTING_WORKFLOW=true
     warn "检测到已有 arkan-workflow 配置（openspec/config.yaml 含 quick_change_criteria）"
     info "本次安装为更新模式"
+    if [[ "$NO_INTERACTIVE" == "true" ]]; then
+      UPGRADE_MODE=true
+      info "非交互更新将覆盖受控工作流模板"
+    fi
   else
     info "检测到现有 openspec/config.yaml（非 arkan-workflow 模板），将提示覆盖"
   fi
@@ -394,12 +400,16 @@ step "安装中..."
 INSTALLED=()
 SKIPPED=()
 
-# 辅助：复制文件，有冲突时询问是否覆盖；--no-interactive 模式下默认跳过
+# 辅助：复制文件，有冲突时询问是否覆盖；升级模式下自动覆盖受控模板
 copy_file() {
   local src="$1" dest="$2" label="$3"
   mkdir -p "$(dirname "$dest")"
   if [[ -f "$dest" ]]; then
-    if [[ "$NO_INTERACTIVE" == "true" ]]; then
+    if [[ "$UPGRADE_MODE" == "true" ]]; then
+      cp "$src" "$dest"
+      ok "${label}（已升级）"
+      INSTALLED+=("$label")
+    elif [[ "$NO_INTERACTIVE" == "true" ]]; then
       info "${label}（已跳过，文件已存在）"
       SKIPPED+=("$label")
     elif ask_yn "  已存在 ${label}，覆盖?" "n"; then
@@ -417,11 +427,16 @@ copy_file() {
   fi
 }
 
-# 辅助：复制目录，有冲突时询问是否覆盖；--no-interactive 模式下默认跳过
+# 辅助：复制目录，有冲突时询问是否覆盖；升级模式下自动覆盖受控模板
 copy_dir() {
   local src="$1" dest="$2" label="$3"
   if [[ -d "$dest" ]]; then
-    if [[ "$NO_INTERACTIVE" == "true" ]]; then
+    if [[ "$UPGRADE_MODE" == "true" ]]; then
+      rm -rf "$dest"
+      cp -r "$src" "$dest"
+      ok "${label}（已升级）"
+      INSTALLED+=("$label")
+    elif [[ "$NO_INTERACTIVE" == "true" ]]; then
       info "${label}（已跳过，目录已存在）"
       SKIPPED+=("$label")
     elif ask_yn "  已存在 ${label}，覆盖?" "n"; then

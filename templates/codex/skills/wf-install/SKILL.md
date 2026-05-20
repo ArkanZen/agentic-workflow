@@ -54,7 +54,7 @@ grep "arkan-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VERS
 若用户选择「升级配置」：
 - 询问 arkan-workflow 仓库路径（同 INSTALL 模式步骤 4），然后执行：
   ```bash
-  bash "<arkan-workflow-path>/install.sh" --type <detected-or-asked-tier> --target <current-dir> --no-interactive
+  bash "<arkan-workflow-path>/install.sh" --type <detected-or-asked-tier> --target <current-dir> --no-interactive --upgrade
   ```
   其中档位通过 `grep "arkan-workflow-tier:" openspec/config.yaml` 读取当前档位。
 

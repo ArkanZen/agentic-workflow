@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1 - 2026-05-20
+
+- 优化 `/wf-quick` 收尾流程：验证通过后先同步 `tasks.md` 勾选状态，再询问是否归档，避免归档阶段因任务已完成但未勾选而二次打断。
+- 新增 `install.sh --upgrade`，用于 `/wf-install` 升级模式覆盖已安装的受控 wf 命令和 Codex skills。
+- `install.sh --no-interactive` 检测到目标项目已有 arkan-workflow 时自动进入更新模式，兼容旧版 `/wf-install` 的自升级。
+- 更新 `/wf-install` 升级分支，执行安装脚本时传入 `--upgrade`。
+
 ## 1.1.0 - 2026-05-20
 
 - 调整 `/wf-quick`、`/wf-small`、`/wf-complex` 的收尾策略：实现和验证完成后询问用户是否归档，用户确认后才执行 `/openspec-archive-change`。

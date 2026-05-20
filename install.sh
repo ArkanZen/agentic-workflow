@@ -398,7 +398,7 @@ copy_file() {
     if [[ "$NO_INTERACTIVE" == "true" ]]; then
       info "${label}（已跳过，文件已存在）"
       SKIPPED+=("$label")
-    elif ask_yn "  已存在 $label，覆盖?" "n"; then
+    elif ask_yn "  已存在 ${label}，覆盖?" "n"; then
       cp "$src" "$dest"
       ok "${label}（已更新）"
       INSTALLED+=("$label")
@@ -420,7 +420,7 @@ copy_dir() {
     if [[ "$NO_INTERACTIVE" == "true" ]]; then
       info "${label}（已跳过，目录已存在）"
       SKIPPED+=("$label")
-    elif ask_yn "  已存在 $label，覆盖?" "n"; then
+    elif ask_yn "  已存在 ${label}，覆盖?" "n"; then
       rm -rf "$dest"
       cp -r "$src" "$dest"
       ok "${label}（已更新）"
@@ -440,7 +440,7 @@ copy_dir() {
 remove_obsolete_path() {
   local path="$1" label="$2"
   if [[ -e "$path" ]]; then
-    if [[ "$NO_INTERACTIVE" == "true" ]] || ask_yn "  检测到已废弃的 $label，删除?" "y"; then
+    if [[ "$NO_INTERACTIVE" == "true" ]] || ask_yn "  检测到已废弃的 ${label}，删除?" "y"; then
       rm -rf "$path"
       ok "${label}（已删除）"
       INSTALLED+=("${label} removed")

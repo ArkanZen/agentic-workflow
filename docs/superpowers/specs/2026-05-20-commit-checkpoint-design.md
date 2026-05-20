@@ -57,20 +57,22 @@ commit_checkpoints:
       运行 git status --short。若无未提交文件，静默继续。
       若有未提交文件：
         展示文件列表，提示"检测到 N 个文件未提交（上次变更遗留），建议先提交再开始新需求"。
-        询问用户 [Y/跳过]。
-        用户选 Y：基于 git diff 内容生成 commit message，用户确认后执行 git commit。
-        用户跳过：直接进入工作流，不再追问。
+        询问用户：请输入 commit message（或输入 'ai' 让 AI 帮你生成，输入 's' 跳过）。
+        用户输入 message：直接执行 git commit -m "<message>"。
+        用户输入 'ai'：读取 git diff，生成 message，用户确认后执行 git commit。
+        用户输入 's' 或跳过：直接进入工作流，不再追问。
 
   end:
     enabled_for: [wf-quick, wf-small, wf-complex]
     behavior: |
-      验证通过后，读取当前 change 的 proposal 标题和 tasks 列表，
+      验证通过后，基于当前会话已有的 proposal 标题和 tasks 列表（无需额外读取文件）
       生成 conventional commit message（类型从 feat/fix/docs/refactor 中选择）。
       message body 包含本次 tasks 的摘要列表。
       展示给用户，询问 [Y/编辑/跳过]。
       用户选 Y：执行 git add -A，git commit -m "<message>"，输出 commit hash，进入归档询问。
       用户选编辑：用用户提供的 message 执行提交。
       用户跳过：直接进入归档询问，不再追问。
+      注意：此步骤不读取 git diff，所有 message 素材来自会话上下文，避免额外 token 开销。
 ```
 
 ---
@@ -128,10 +130,12 @@ commit_checkpoints:
   M src/service/export.ts
   A src/types/export.d.ts
 
-建议在开始新需求前先提交这些变更。是否现在提交？[Y/跳过]
+建议在开始新需求前先提交这些变更。
+请输入 commit message（输入 'ai' 让 AI 帮你生成，输入 's' 跳过）：
 ```
 
-用户选 Y → AI 读取 git diff 生成 message（如 `fix: 修复用户导出逻辑`）→ 确认 → `git commit`
+用户自填 message → `git commit`
+用户输入 'ai' → AI 读取 git diff → 生成 message（如 `fix: 修复用户导出逻辑`）→ 确认 → `git commit`
 
 ### END checkpoint 触发时
 

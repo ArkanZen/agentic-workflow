@@ -159,6 +159,20 @@ bash ~/agentic-workflow/install.sh \
 | `--target <目录>` | 目标项目目录（默认交互询问） |
 | `--no-interactive` | 完全非交互，冲突文件默认跳过 |
 | `--switch` | 仅替换 config.yaml，切换档位（不重新安装） |
+| `--version` | 输出当前 agentic-workflow 模板版本 |
+
+---
+
+## 版本与升级
+
+仓库根目录的 `VERSION` 是工作流模板版本的唯一来源，`CHANGELOG.md` 记录每次发布的行为变化。安装后的项目会在 `openspec/config.yaml` 写入：
+
+```yaml
+# arkan-workflow-tier: backend
+# arkan-workflow-version: 1.1.0
+```
+
+后续其他人更新工作流时，先拉取本仓库最新代码，再在目标项目运行 `/wf-install`。AI 会读取目标项目中的 `arkan-workflow-version`，再对比本仓库 `VERSION`：版本落后时进入升级模式，版本一致时进入切换档位模式。
 
 ---
 
@@ -177,6 +191,10 @@ bash ~/agentic-workflow/install.sh \
 ### 切换档位
 
 项目类型变了？用 `/wf-install` 命令，AI 会检测当前档位并引导切换。
+
+### 归档策略
+
+`/wf-quick`、`/wf-small` 和 `/wf-complex` 都不会在实现完成后静默归档。它们会先完成必要验证或 review，然后询问是否归档；用户确认后才执行 `/openspec-archive-change`。归档命令仍会保留变更选择、未完成任务检查和 delta spec 同步确认。
 
 ---
 

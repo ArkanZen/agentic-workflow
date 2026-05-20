@@ -15,4 +15,5 @@ description: |
 3. apply 前按 writing-plans 风格细化任务分解
 4. 执行 /openspec-apply-change 实现
 5. 完成后执行 verification-before-completion 验收
-6. 验收通过后执行 /openspec-archive-change 归档
+6. 验收通过后询问用户是否归档；用户确认后再执行 /openspec-archive-change
+7. 归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑

@@ -17,6 +17,11 @@ info() { echo -e "  ${CYAN}→${RESET} $*"; }
 # ── 路径 ──────────────────────────────────────────────────────────────────────
 WORKFLOW_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATES="$WORKFLOW_DIR/templates"
+if [[ -f "$WORKFLOW_DIR/VERSION" ]]; then
+  WORKFLOW_VERSION="$(tr -d '[:space:]' < "$WORKFLOW_DIR/VERSION")"
+else
+  WORKFLOW_VERSION="unknown"
+fi
 
 # ── 参数解析 ──────────────────────────────────────────────────────────────────
 NO_INTERACTIVE=false
@@ -34,6 +39,7 @@ while [[ $# -gt 0 ]]; do
       ARG_TARGET="$2"; shift 2 ;;
     --no-interactive) NO_INTERACTIVE=true; shift ;;
     --switch)         SWITCH_MODE=true; shift ;;
+    --version)        echo "$WORKFLOW_VERSION"; exit 0 ;;
     -*)               err "未知参数: $1"; exit 1 ;;
     *)                ARG_TARGET="$1"; shift ;;  # 位置参数：目标目录
   esac
@@ -80,6 +86,7 @@ echo -e "${BOLD}${CYAN}╔══════════════════
 echo -e "${BOLD}${CYAN}║   arkan-workflow 安装脚本                    ║${RESET}"
 echo -e "${BOLD}${CYAN}║   OpenSpec + GStack 双生态工作流             ║${RESET}"
 echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════╝${RESET}"
+echo -e "  ${CYAN}版本:${RESET} ${WORKFLOW_VERSION}"
 echo ""
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -160,12 +167,18 @@ if [[ "$SWITCH_MODE" == "true" ]]; then
   # 更新 .claude/CLAUDE.md 中的档位注释
   if [[ -f "$TARGET_DIR/.claude/CLAUDE.md" ]]; then
     sed -i.bak "s|^# arkan-workflow-tier: .*|# arkan-workflow-tier: ${ARG_TYPE}|" "$TARGET_DIR/.claude/CLAUDE.md"
+    if grep -q "^# arkan-workflow-version:" "$TARGET_DIR/.claude/CLAUDE.md"; then
+      sed -i.bak "s|^# arkan-workflow-version: .*|# arkan-workflow-version: ${WORKFLOW_VERSION}|" "$TARGET_DIR/.claude/CLAUDE.md"
+    fi
     rm -f "$TARGET_DIR/.claude/CLAUDE.md.bak"
     ok ".claude/CLAUDE.md 档位注释已更新"
   fi
   # 更新 AGENTS.md 中的档位注释
   if [[ -f "$TARGET_DIR/AGENTS.md" ]]; then
     sed -i.bak "s|<!-- arkan-workflow-tier: .* -->|<!-- arkan-workflow-tier: ${ARG_TYPE} -->|" "$TARGET_DIR/AGENTS.md"
+    if grep -q "<!-- arkan-workflow-version:" "$TARGET_DIR/AGENTS.md"; then
+      sed -i.bak "s|<!-- arkan-workflow-version: .* -->|<!-- arkan-workflow-version: ${WORKFLOW_VERSION} -->|" "$TARGET_DIR/AGENTS.md"
+    fi
     rm -f "$TARGET_DIR/AGENTS.md.bak"
     ok "AGENTS.md 档位注释已更新"
   fi
@@ -554,6 +567,7 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
     cat > "$TARGET_DIR/.claude/CLAUDE.md" << CLAUDEMD
 # CLAUDE.md
 # arkan-workflow-tier: ${PROJECT_TYPE}
+# arkan-workflow-version: ${WORKFLOW_VERSION}
 
 Claude Code 工作流说明（补充 AGENTS.md）。
 
@@ -626,6 +640,7 @@ if [[ -f "$TARGET_DIR/AGENTS.md" ]]; then
 
 ## OpenSpec + GStack 工作流
 <!-- arkan-workflow-tier: ${PROJECT_TYPE} -->
+<!-- arkan-workflow-version: ${WORKFLOW_VERSION} -->
 
 所有功能变更通过 OpenSpec 状态机管理。禁止直接修改代码而不经过 propose 阶段。
 

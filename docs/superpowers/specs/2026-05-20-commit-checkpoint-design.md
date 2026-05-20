@@ -58,7 +58,7 @@ commit_checkpoints:
       若有未提交文件：
         展示文件列表，提示"检测到 N 个文件未提交（上次变更遗留），建议先提交再开始新需求"。
         询问用户 [Y/跳过]。
-        用户选 Y：基于 git diff --stat 生成 commit message，用户确认后执行 git commit。
+        用户选 Y：基于 git diff 内容生成 commit message，用户确认后执行 git commit。
         用户跳过：直接进入工作流，不再追问。
 
   end:
@@ -131,7 +131,7 @@ commit_checkpoints:
 建议在开始新需求前先提交这些变更。是否现在提交？[Y/跳过]
 ```
 
-用户选 Y → AI 生成 message（如 `fix: 修复用户导出逻辑`）→ 确认 → `git commit`
+用户选 Y → AI 读取 git diff 生成 message（如 `fix: 修复用户导出逻辑`）→ 确认 → `git commit`
 
 ### END checkpoint 触发时
 

@@ -21,5 +21,6 @@ description: |
 5. 运行 `openspec instructions tasks --change "<name>" --json`，生成 tasks.md
 6. 执行 /openspec-apply-change 实现
 7. 实现完成后运行最小必要验证，并在结果中说明已验证项
-8. 验证通过后询问用户是否归档；用户确认后再执行 /openspec-archive-change
-9. 归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑
+8. 验证通过后同步 `tasks.md`：将已确认完成的任务从 `- [ ]` 勾选为 `- [x]`；若存在无法确认完成的任务，先告知用户并保留未勾选状态
+9. 询问用户是否归档；用户确认后再执行 /openspec-archive-change
+10. 归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑；若第 8 步已确认全部任务完成，归档不应因任务未勾选再次打断

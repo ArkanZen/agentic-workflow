@@ -10,10 +10,12 @@ description: |
 适用于跨模块、架构变更、业务边界不清晰或实现风险较高的任务。
 
 执行以下步骤：
-1. 调用 brainstorming skill 探索需求、边界、风险和替代方案
-2. 设计确认后，执行 /openspec-propose（含 /gstack-plan-eng-review gate）
-3. apply 前按 writing-plans 风格细化任务分解
-4. 执行 /openspec-apply-change 实现
-5. 完成后执行 verification-before-completion 验收
-6. 验收通过后询问用户是否归档；用户确认后再执行 /openspec-archive-change
-7. 归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑
+1. 读取 openspec/config.yaml 中 commit_checkpoints.start 规则并执行。
+2. 调用 brainstorming skill 探索需求、边界、风险和替代方案
+3. 设计确认后，执行 /openspec-propose（含 /gstack-plan-eng-review gate）
+4. apply 前按 writing-plans 风格细化任务分解
+5. 执行 /openspec-apply-change 实现
+6. 完成后执行 verification-before-completion 验收
+7. 读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行。
+8. 验收通过后询问用户是否归档；用户确认后再执行 /openspec-archive-change
+9. 归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑

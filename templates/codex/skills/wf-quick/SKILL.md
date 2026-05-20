@@ -19,4 +19,7 @@ description: |
 3. 运行 `openspec instructions proposal --change "<name>" --json`，生成 proposal.md
 4. 跳过 design.md（快速通道不生成此工件，不运行任何 gate）
 5. 运行 `openspec instructions tasks --change "<name>" --json`，生成 tasks.md
-6. 展示最终状态，提示用户运行 /openspec-apply-change 开始实现
+6. 执行 /openspec-apply-change 实现
+7. 实现完成后运行最小必要验证，并在结果中说明已验证项
+8. 验证通过后询问用户是否归档；用户确认后再执行 /openspec-archive-change
+9. 归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑

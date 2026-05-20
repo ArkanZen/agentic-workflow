@@ -1,8 +1,8 @@
 ---
 name: wf-install
 description: |
-  工作流档位安装/切换。AI 分析项目信号推荐档位，支持全新安装、档位切换。
-  2 种模式：INSTALL（全新安装）/ SWITCH（切换档位）。
+  工作流档位安装/切换/升级。AI 分析项目信号推荐档位，支持全新安装、档位切换和版本升级。
+  3 种模式：INSTALL（全新安装）/ SWITCH（切换档位）/ UPGRADE（升级模板版本）。
   触发词：wf-install、安装工作流、切换档位、install workflow。
 ---
 
@@ -19,23 +19,34 @@ grep "arkan-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VERS
 
 路由规则：
 - 若文件**不存在** → 进入 **INSTALL 模式**
-- 若文件**存在** AND 含 `arkan-workflow-version:` 注释 → 进入 **SWITCH 模式**
 - 若文件**存在** AND **不含** `arkan-workflow-version:` 注释 → 进入 **UPGRADE 模式**
+- 若文件**存在** AND 含 `arkan-workflow-version:` 注释：
+  1. 询问或确认 arkan-workflow 仓库路径。
+  2. 读取 `<arkan-workflow-path>/VERSION`，作为可安装的最新版本。
+  3. 将 `openspec/config.yaml` 中的当前版本与仓库版本按语义版本号比较。
+  4. 若当前版本低于仓库版本 → 进入 **UPGRADE 模式**。
+  5. 若当前版本等于仓库版本 → 进入 **SWITCH 模式**。
+  6. 若当前版本高于仓库版本 → 提醒用户本地仓库可能落后，询问是否继续切换档位。
 
 > Codex 注意：使用 shell 工具执行命令；读取文件用文件读取工具；向用户提问用 AskUserQuestion 或等价的交互工具。
 
 ---
 
-## UPGRADE 模式（更新旧版配置）
+## UPGRADE 模式（升级模板版本）
 
-检测到 `openspec/config.yaml` 存在但缺少版本标记，说明工作流是在引入版本跟踪之前安装的。
+进入原因包括：
+- `openspec/config.yaml` 存在但缺少版本标记，说明工作流是在引入版本跟踪之前安装的。
+- 已安装版本低于 arkan-workflow 仓库 `VERSION` 中记录的版本。
 
 展示以下提示（用 AskUserQuestion）：
 ```
-检测到旧版工作流配置（无版本标记）。
+检测到可升级的工作流配置。
+
+当前版本：<installed-version-or-unknown>
+仓库版本：<repo-version>
 
 选项：
-1. 升级配置 — 重新运行 install.sh 覆盖 config.yaml（推荐）
+1. 升级配置 — 重新运行 install.sh 安装当前档位的最新模板（推荐）
 2. 切换档位 — 直接切换到其他档位（跳过升级，进入 SWITCH 模式）
 3. 取消
 ```

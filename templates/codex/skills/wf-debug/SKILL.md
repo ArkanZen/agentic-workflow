@@ -2,7 +2,7 @@
 name: wf-debug
 description: |
   Debug/重构/单测：问题已知，无需新 spec，直接进入排查或实现。
-  触发词：wf-debug、debug、修 bug、重构、补单测、测试。
+  仅当用户显式输入 /wf-debug 时使用；不要因“debug、修 bug、重构、补单测、测试”等自然语言自动触发。
 ---
 
 Debug / 重构 / 单测通道。

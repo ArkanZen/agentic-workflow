@@ -3,7 +3,7 @@ name: wf-quick
 description: |
   快速通道：文案、样式、明确 bug，跳过 gate，直接生成 proposal + tasks。
   适用于 ≤3 文件、无架构/安全影响、意图无歧义的小改动。
-  触发词：wf-quick、快速通道、快速修复、quick fix、小改动。
+  仅当用户显式输入 /wf-quick 时使用；不要因“快速通道、快速修复、quick fix、小改动”等自然语言自动触发。
 ---
 
 快速通道变更。

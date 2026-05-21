@@ -73,7 +73,7 @@ cd ~/.claude/skills/gstack && ./setup
 
 ### 可选安装 Superpowers
 
-Superpowers 插件不是硬依赖。未安装时，`/wf-complex` 和 `/wf-debug` 仍可运行，但会降级为按模板方法论执行，无法调用完整 Superpowers skill。
+Superpowers 插件不是安装硬依赖。未安装时，`/wf-complex`、`/wf-debug` 和明确 bug 场景下的 `/wf-quick` 必须先说明缺失项和影响，等待用户确认后才可降级为模板检查清单；不得声称已加载对应 Superpowers skill。
 
 - Codex：在插件/工具面板安装 Superpowers。
 - Claude Code：运行 `/plugins install superpowers`。
@@ -178,7 +178,7 @@ bash ~/agentic-workflow/install.sh \
 
 ```yaml
 # agentic-workflow-tier: backend
-# agentic-workflow-version: 1.1.5
+# agentic-workflow-version: <VERSION>
 ```
 
 同时在 `.agentic-workflow/manifest.json` 记录 `sourceRepo`（安装时从 git remote 自动检测的 GitHub URL）。
@@ -191,12 +191,20 @@ bash ~/agentic-workflow/install.sh \
 
 开源发布时，其他项目通过 **GitHub Releases** 检测新版本。发布步骤：
 
-1. 更新 `VERSION`、`CHANGELOG.md` 和所有配置模板中的版本号
-2. 提交并推送到 GitHub：
+1. 在 `CHANGELOG.md` 新增对应版本条目
+2. 运行版本脚本，只更新唯一版本源 `VERSION`：
+   ```bash
+   ./scripts/bump-version.sh 1.2.0
+   ```
+3. 运行校验，确认模板没有硬编码版本号：
+   ```bash
+   ./validate-workflow.sh .
+   ```
+4. 提交并推送到 GitHub：
    ```bash
    git push origin master
    ```
-3. 在 GitHub 上创建 Release，**tag 格式必须为 `v<semver>`**（例如 `v1.2.0`）：
+5. 在 GitHub 上创建 Release，**tag 格式必须为 `v<semver>`**（例如 `v1.2.0`）：
    ```bash
    git tag v1.2.0
    git push origin v1.2.0
@@ -213,15 +221,17 @@ bash ~/agentic-workflow/install.sh \
 
 | 命令 | 适用场景 | 实际用到的工具 | 缺少增强项时的影响 |
 |------|----------|----------------|--------------------|
-| `/wf-quick` | 文案、样式、明确 bug，改动很小 | OpenSpec 快速通道，生成 proposal + tasks，跳过 gate | 不依赖 GStack / Superpowers |
+| `/wf-quick` | 文案、样式、明确 bug，改动很小 | OpenSpec 快速通道，生成 proposal + tasks，跳过 gate；明确 bug 时加载 systematic-debugging | 明确 bug 且缺少 Superpowers 时需确认降级 |
 | `/wf-small` | 新增字段、加指标、范围清晰的小需求 | OpenSpec 完整通道 + GStack gate | 缺少 GStack 时无法完成审查 gate |
-| `/wf-complex` | 跨模块、架构变更、边界模糊 | Superpowers 探索/计划 + OpenSpec + GStack gate | 缺少 Superpowers 会降级；缺少 GStack 会卡在审查 gate |
-| `/wf-debug` | 找 bug、补测试、重构 | Superpowers Debug / TDD 方法论 | 缺少 Superpowers 时按模板方法论执行 |
-| `/wf-plan` | 产品/架构方案，先判断值不值得做 | GStack 产品/工程评估 | 缺少 GStack 时只能做普通讨论 |
+| `/wf-complex` | 跨模块、架构变更、边界模糊 | Superpowers 探索/计划 + OpenSpec + GStack gate | 缺少 Superpowers 或 GStack 时需确认降级 |
+| `/wf-debug` | 找 bug、补测试、重构 | Superpowers Debug / TDD / 重构边界确认 | 缺少 Superpowers 时需确认降级 |
+| `/wf-plan` | 产品/架构方案，先判断值不值得做 | GStack 产品/工程评估 | 缺少 GStack 时需确认降级为普通讨论 |
 
 ### Codex App 适配
 
 Codex 版 `/wf-quick`、`/wf-small` 和 `/wf-complex` 会在关键产物生成后暂停，让用户先确认再进入实现：proposal / design / tasks 会以本地绝对路径链接展示，并附带 gate 状态和任务摘要。存在选项时，Codex App 中优先使用 UI 交互工具；如果当前环境没有 UI 工具，才退化为明确的文本选项。
+
+Codex 版 `/wf-*` 还会执行依赖自检：工作流文档中声明的 `required_skills`、`required_workflows`、`required_reviews` 和 `conditional_skills` 必须先加载或执行，不能只按方法论摘要推进。若依赖不可用，必须明确说明降级原因并等待确认；完成前会输出执行审计，列出已加载 skill、OpenSpec workflow、GStack gate 和验证结果。
 
 Git checkpoint 也按 Codex App 交互优化：开始前发现脏工作区时优先给出「提交现有改动 / 跳过 / 取消」选项；结束时先完成归档决策和 spec sync，再进入最终提交，避免归档后又留下未提交的 spec 变更。
 

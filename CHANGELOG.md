@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.8 - 2026-05-21
+
+- Codex `/wf-*` 工作流新增强制依赖加载规则：显式声明 required/conditional skills、OpenSpec workflow 和 GStack review，不再只写“按方法论执行”。
+- Codex `/wf-debug`、`/wf-complex`、`/wf-small`、`/wf-quick`、`/wf-plan` 新增启动自检和收尾审计，要求列出依赖加载状态、降级原因、gate/review 和验证结果。
+- `AGENTS.md` 受控块和 README 新增依赖加载规则说明；缺少 Superpowers/GStack 时必须说明影响并等待用户确认后再降级。
+- OpenSpec 配置模板改用 `__WORKFLOW_VERSION__` 占位符，安装和切换档位时由 `install.sh` 根据根目录 `VERSION` 渲染，避免多处手动改版本号。
+- 新增 `scripts/bump-version.sh` 和 doctor 版本源检查，发布时只需维护 `VERSION` 和 `CHANGELOG.md`，模板中硬编码版本会被拦截。
+- 清理 OpenSpec apply/archive 文档中的悬空引用：归档同步改用 `openspec archive`，blocked apply 改为复用 propose 或 `openspec instructions` 补齐 artifact；doctor 新增悬空 workflow 引用检查。
+
 ## 1.1.7 - 2026-05-21
 
 - 工作流生成工件后强制展示完整绝对路径（非相对路径），便于用户直接定位文件。

@@ -8,6 +8,25 @@ description: |
 
 快速通道变更。
 
+## 强制依赖清单
+
+快速通道会跳过 design gate，但不能跳过 OpenSpec 记录、实现确认和完成验证。
+
+```yaml
+required_workflows:
+  implementation:
+    - openspec-apply-change
+  archive:
+    - openspec-archive-change
+conditional_skills:
+  bug_or_unexpected_behavior:
+    - superpowers:systematic-debugging
+  before_claiming_done:
+    - superpowers:verification-before-completion
+```
+
+若快速通道处理的是明确 bug，必须先加载 `superpowers:systematic-debugging` 完成根因确认，再生成 quick change。若宿主环境没有对应 skill 或 workflow，必须先明确说明缺失项和影响，再等待用户确认是否降级继续。
+
 ## Codex App 交互规则
 
 - 有选项的地方，优先使用 Codex App 提供的 UI 交互工具（如 `request_user_input` 或当前宿主暴露的等价工具）。
@@ -15,12 +34,23 @@ description: |
 - quick 虽然跳过 design gate，但 proposal/tasks 生成后仍必须暂停展示并等待确认。
 - 所有本地文件链接必须使用绝对路径，方便 Codex App 直接打开。
 
+## 启动自检
+
+开始执行时必须先展示或内部完成以下自检，并在首条进展中说明依赖状态：
+
+- 当前工作流：`wf-quick`
+- quick_change_criteria：待判定 / 已符合 / 不符合
+- 必须执行的 OpenSpec workflow：`openspec-apply-change`、`openspec-archive-change`
+- 条件 skill：明确 bug 时加载 `superpowers:systematic-debugging`；完成前优先加载 `superpowers:verification-before-completion`
+- 已加载状态：逐项标记已加载 / 未加载并说明降级原因
+
 首先确认此变更符合 openspec/config.yaml 中 quick_change_criteria 定义的全部条件：
 改动范围 ≤ 3 个文件、不涉及新功能/架构/安全敏感逻辑、意图无歧义。
 
 若不符合，告知用户改用 /wf-small 走完整通道。
 
 若符合，执行以下步骤：
+0. 若任务是明确 bug，先加载并执行 `superpowers:systematic-debugging`，完成根因确认后再继续。
 1. 从用户输入派生 kebab-case 变更名（加 `quick-` 前缀，例如 `quick-fix-date-format`）
 2. 运行 `openspec new change "<name>"`
 3. 运行 `openspec instructions proposal --change "<name>" --json`，生成 proposal.md
@@ -35,8 +65,18 @@ description: |
    - 选项 B：修改 tasks/proposal
    - 选项 C：取消
    用户确认前，不得执行 /openspec-apply-change。
-8. 用户确认后，执行 /openspec-apply-change 实现。
-9. 实现完成后运行最小必要验证，并在结果中说明已验证项。
+8. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
+9. 实现完成后优先加载 `superpowers:verification-before-completion`，运行最小必要验证，并在结果中说明已验证项。
 10. 验证通过后同步 `tasks.md`：将已确认完成的任务从 `- [ ]` 勾选为 `- [x]`；若存在无法确认完成的任务，先告知用户并保留未勾选状态。
-11. 询问用户是否归档；用户确认后再执行 /openspec-archive-change。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑；若第 10 步已确认全部任务完成，归档不应因任务未勾选再次打断。
+11. 询问用户是否归档；用户确认后再执行 `/openspec-archive-change`。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑；若第 10 步已确认全部任务完成，归档不应因任务未勾选再次打断。
 12. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
+
+## 收尾审计
+
+完成前必须输出执行审计：
+
+- `wf-quick`：已执行
+- quick_change_criteria：列出判定结论
+- OpenSpec workflow：列出 `apply`、`archive` 的执行状态
+- 条件 skill：列出 `systematic-debugging`、`verification-before-completion` 已加载 / 不适用 / 降级原因
+- 验证：列出实际运行的命令和结果

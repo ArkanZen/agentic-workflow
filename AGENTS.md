@@ -5,7 +5,7 @@
 <!-- agentic-workflow:start -->
 ## OpenSpec + GStack 工作流
 <!-- agentic-workflow-tier: vibe -->
-<!-- agentic-workflow-version: 1.1.7 -->
+<!-- agentic-workflow-version: 1.1.8 -->
 
 默认不启用本工作流。仅当用户显式输入 `/wf-*` 或 `/openspec-*` 命令时，才进入 OpenSpec + GStack 流程；普通开发请求按项目常规协作方式处理。
 
@@ -19,6 +19,14 @@
 - `/openspec-apply-change` — 执行 tasks 实现代码
 - `/openspec-archive-change` — 归档变更
 - `/openspec-explore` — 探索思考
+
+### 强制依赖加载规则
+当工作流文档出现 `required_skills`、`required_workflows`、`required_reviews`、`conditional_skills`，或明确写出 `superpowers:*`、`openspec-*`、`/gstack-*`、`/plan-*` 等依赖时，执行者必须先加载或执行对应 skill/workflow/review，再进入下一步。
+
+- 不得只按方法论摘要执行，必须读取对应 `SKILL.md` 或执行对应命令。
+- 每个 `/wf-*` 开始时必须做启动自检，列出当前工作流、强制依赖和已加载状态。
+- 依赖不可用时必须明确说明缺失项和影响，等待用户确认是否降级继续；不得声称已加载或已审查。
+- 完成前必须输出执行审计，列出强制依赖、关键 workflow、review/gate 和验证结果。
 
 ### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
 需先安装官方 GStack。Codex 安装方式：

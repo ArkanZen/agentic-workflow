@@ -35,6 +35,7 @@ step() {
 }
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WF_SKILL_NAMES=(wf-quick wf-small wf-complex wf-debug wf-plan wf-install)
 target_dir="${1:-$PWD}"
 if ! target_dir="$(realpath "$target_dir" 2>/dev/null)"; then
   fail "目标目录不存在：$target_dir"
@@ -87,16 +88,66 @@ compare_path() {
 
 compare_codex_wf_skills() {
   local name
-  for name in wf-quick wf-small wf-complex wf-debug wf-plan wf-install; do
+  for name in "${WF_SKILL_NAMES[@]}"; do
     compare_path "$script_dir/templates/codex/skills/$name" "$target_dir/.codex/skills/$name" "Codex $name"
   done
 }
 
 compare_claude_wf_commands() {
   local name
-  for name in wf-quick wf-small wf-complex wf-debug wf-plan wf-install; do
+  for name in "${WF_SKILL_NAMES[@]}"; do
     compare_path "$script_dir/templates/claude/commands/$name.md" "$target_dir/.claude/commands/$name.md" "Claude $name"
   done
+}
+
+check_codex_dependency_guards() {
+  local name file; local -a missing
+  for name in "${WF_SKILL_NAMES[@]}"; do
+    file="$script_dir/templates/codex/skills/$name/SKILL.md"
+    missing=()
+    grep -q "## 强制依赖清单" "$file" 2>/dev/null || missing+=("强制依赖清单")
+    grep -q "## 启动自检" "$file" 2>/dev/null || missing+=("启动自检")
+    grep -q "## 收尾审计" "$file" 2>/dev/null || missing+=("收尾审计")
+    if [[ "${#missing[@]}" -eq 0 ]]; then
+      ok "Codex $name 依赖守卫完整"
+    else
+      fail "Codex $name 缺少依赖守卫：${missing[*]}"
+    fi
+  done
+}
+
+check_version_source() {
+  local file hardcoded_count
+  for file in "$script_dir"/templates/openspec/config-*.yaml; do
+    if grep -q "__WORKFLOW_VERSION__" "$file" 2>/dev/null; then
+      ok "$(basename "$file") 使用 VERSION 占位符"
+    else
+      fail "$(basename "$file") 未使用 __WORKFLOW_VERSION__ 占位符"
+    fi
+  done
+
+  hardcoded_count="$(grep -R "agentic-workflow-version: [0-9]" "$script_dir/templates" 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ "$hardcoded_count" -eq 0 ]]; then
+    ok "模板未硬编码发布版本"
+  else
+    fail "模板中仍有 $hardcoded_count 处硬编码发布版本"
+  fi
+}
+
+check_dangling_workflow_references() {
+  local forbidden_count pattern
+  pattern="openspec-sync-specs|openspec-continue-change|/opsx:continue|opsx:continue"
+  if command -v rg >/dev/null 2>&1; then
+    forbidden_count="$(rg -uu "$pattern" "$script_dir" --glob '!validate-workflow.sh' 2>/dev/null | wc -l | tr -d ' ')"
+  else
+    forbidden_count="$(grep -rE "$pattern" "$script_dir" --exclude='validate-workflow.sh' 2>/dev/null | wc -l | tr -d ' ')"
+  fi
+  if [[ "$forbidden_count" -eq 0 ]]; then
+    ok "未发现悬空 OpenSpec workflow 引用"
+  else
+    fail "发现 $forbidden_count 处悬空 OpenSpec workflow 引用"
+    info "可运行：rg -uu \"$pattern\" \"$script_dir\""
+  fi
 }
 
 echo ""
@@ -139,6 +190,15 @@ fi
 step "模板漂移"
 compare_codex_wf_skills
 compare_claude_wf_commands
+
+step "Codex 依赖守卫"
+check_codex_dependency_guards
+
+step "版本源"
+check_version_source
+
+step "悬空引用"
+check_dangling_workflow_references
 
 if [[ -f "$target_dir/.claude/CLAUDE.md" ]]; then
   claude_version="$(read_marker "$target_dir/.claude/CLAUDE.md" version || true)"

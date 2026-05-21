@@ -266,20 +266,11 @@ B. 取消（先归档再切换）
 
 用户选择目标档位后：
 
-1. 定位对应模板文件：`<agentic-workflow-path>/templates/openspec/config-<tier>.yaml`
-2. 用 Bash 工具备份当前配置：
+1. 用 Bash 工具执行安装脚本的 switch 模式，由脚本备份当前配置并渲染 `__WORKFLOW_VERSION__`：
    ```bash
-   cp openspec/config.yaml openspec/config.yaml.bak
+   bash "<agentic-workflow-path>/install.sh" --switch --type <tier> --target <current-dir> --no-interactive
    ```
-3. 用 Bash 工具复制新配置：
-   ```bash
-   cp <agentic-workflow-path>/templates/openspec/config-<tier>.yaml openspec/config.yaml
-   ```
-4. 若目标档位为 `fullstack`，额外创建目录：
-   ```bash
-   mkdir -p openspec/specs/frontend openspec/specs/backend
-   ```
-5. 输出：
+2. 输出：
    ```
    ✓ 已切换到 <tier-name> 档位。原配置已备份为 openspec/config.yaml.bak。
    ⚠ 注意：config.yaml 已更新，如有自定义规则请手动迁移。

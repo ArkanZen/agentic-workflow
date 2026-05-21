@@ -152,6 +152,13 @@ hash_file() {
   fi
 }
 
+# 渲染模板占位符，确保 VERSION 是工作流版本的唯一来源
+render_template_file() {
+  local src="$1" dest="$2"
+  [[ -z "${WORKFLOW_VERSION:-}" ]] && { echo "ERROR: WORKFLOW_VERSION 未设置，无法渲染模板" >&2; exit 1; }
+  sed "s/__WORKFLOW_VERSION__/${WORKFLOW_VERSION}/g" "$src" > "$dest"
+}
+
 # 收集受控安装文件，用于 manifest 记录本次安装的真实落点
 collect_manifest_files() {
   local target="$1"
@@ -304,7 +311,7 @@ if [[ "$SWITCH_MODE" == "true" ]]; then
   esac
   cp "$TARGET_DIR/openspec/config.yaml" "$TARGET_DIR/openspec/config.yaml.bak"
   ok "config.yaml 已备份为 config.yaml.bak"
-  cp "$new_tmpl" "$TARGET_DIR/openspec/config.yaml"
+  render_template_file "$new_tmpl" "$TARGET_DIR/openspec/config.yaml"
   ok "档位已切换到: $ARG_TYPE"
   # 更新 .claude/CLAUDE.md 中的档位注释
   if [[ -f "$TARGET_DIR/.claude/CLAUDE.md" ]]; then
@@ -437,7 +444,7 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
     ok "Superpowers 插件已安装"
   else
     warn "Superpowers 插件未安装（不阻塞安装，复杂/Debug 模式会降级）"
-    info "影响范围：/wf-complex 和 /wf-debug 无法调用完整 Superpowers skill，只能按模板方法论执行"
+    info "影响范围：/wf-complex、/wf-debug 和明确 bug 场景的 /wf-quick 无法加载完整 Superpowers skill，执行时必须提示降级并等待确认"
     info "建议安装：在 Claude Code 中运行 /plugins install superpowers"
     info "依赖的 Superpowers skill："
     info "  brainstorming / writing-plans / verification-before-completion"
@@ -460,8 +467,8 @@ if [[ "$INSTALL_CODEX" == "true" ]]; then
   if [[ "$CODEX_SUPERPOWERS_INSTALLED" == "true" ]]; then
     ok "Codex Superpowers 插件已安装"
   else
-    warn "Codex Superpowers 插件未安装（不阻塞安装，复杂/Debug 模式会降级）"
-    info "提示：如需 /wf-complex 和 /wf-debug 的完整 Superpowers 体验，请在当前环境安装 Superpowers 插件"
+    warn "Codex Superpowers 插件未安装（不阻塞安装，复杂/Debug/明确 bug 模式会提示降级）"
+    info "提示：如需 /wf-complex、/wf-debug 和明确 bug 场景 /wf-quick 的完整 Superpowers 体验，请在当前环境安装 Superpowers 插件"
     info "安装方式：在 Codex 插件/工具面板中安装 Superpowers；若使用 Claude Code，则运行 /plugins install superpowers"
     SOFT_WARN=true
   fi
@@ -546,20 +553,20 @@ step "安装中..."
 # 检测 GitHub 远程 URL，写入 manifest.json sourceRepo 字段
 SOURCE_REPO="$(detect_source_repo)"
 
-# 辅助：复制文件，有冲突时询问是否覆盖；升级模式下自动覆盖受控模板
+# 辅助：复制并渲染文件，有冲突时询问是否覆盖；升级模式下自动覆盖受控模板
 copy_file() {
   local src="$1" dest="$2" label="$3"
   mkdir -p "$(dirname "$dest")"
   if [[ -f "$dest" ]]; then
     if [[ "$UPGRADE_MODE" == "true" ]]; then
-      cp "$src" "$dest"
+      render_template_file "$src" "$dest"
       ok "${label}（已升级）"
       INSTALLED+=("$label")
     elif [[ "$NO_INTERACTIVE" == "true" ]]; then
       info "${label}（已跳过，文件已存在）"
       SKIPPED+=("$label")
     elif ask_yn "  已存在 ${label}，覆盖?" "n"; then
-      cp "$src" "$dest"
+      render_template_file "$src" "$dest"
       ok "${label}（已更新）"
       INSTALLED+=("$label")
     else
@@ -567,7 +574,7 @@ copy_file() {
       SKIPPED+=("$label")
     fi
   else
-    cp "$src" "$dest"
+    render_template_file "$src" "$dest"
     ok "$label"
     INSTALLED+=("$label")
   fi
@@ -637,6 +644,14 @@ render_workflow_block() {
 - \`/openspec-apply-change\` — 执行 tasks 实现代码
 - \`/openspec-archive-change\` — 归档变更
 - \`/openspec-explore\` — 探索思考
+
+### 强制依赖加载规则
+当工作流文档出现 \`required_skills\`、\`required_workflows\`、\`required_reviews\`、\`conditional_skills\`，或明确写出 \`superpowers:*\`、\`openspec-*\`、\`/gstack-*\`、\`/plan-*\` 等依赖时，执行者必须先加载或执行对应 skill/workflow/review，再进入下一步。
+
+- 不得只按方法论摘要执行，必须读取对应 \`SKILL.md\` 或执行对应命令。
+- 每个 \`/wf-*\` 开始时必须做启动自检，列出当前工作流、强制依赖和已加载状态。
+- 依赖不可用时必须明确说明缺失项和影响，等待用户确认是否降级继续；不得声称已加载或已审查。
+- 完成前必须输出执行审计，列出强制依赖、关键 workflow、review/gate 和验证结果。
 
 ### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
 需先安装官方 GStack。${host} 安装方式：

@@ -8,12 +8,40 @@ description: |
 
 工作流档位安装与切换。
 
+## 强制依赖清单
+
+`wf-install` 不依赖外部 Superpowers 或 GStack skill，但必须执行安装脚本和版本检测命令，不得只给出安装建议。
+
+```yaml
+required_commands:
+  status_detection:
+    - test -f openspec/config.yaml
+    - grep "agentic-workflow-version:" openspec/config.yaml
+    - cat .agentic-workflow/manifest.json
+  installation:
+    - bash "<agentic-workflow-path>/install.sh"
+conditional_commands:
+  remote_upgrade:
+    - git ls-remote --tags --refs "<sourceRepo>" 'v[0-9]*'
+```
+
+若命令不可用或路径无效，必须明确说明失败原因，并通过 UI 交互让用户选择重试、切换模式或取消。
+
 ## Codex App 交互规则
 
 - 有选项的地方，优先使用 Codex App 提供的 UI 交互工具（如 `request_user_input` 或当前宿主暴露的等价工具）。
 - 只有 UI 交互工具不可用时，才退化为文本选项；文本选项必须短且明确。
 - 安装、升级或切换前必须展示将变更的文件范围，并等待用户确认。
 - 安装或升级完成后，提示用户重新打开/刷新 Codex 会话以加载新的 skill 模板。
+
+## 启动自检
+
+开始执行时必须先展示或内部完成以下自检，并在首条进展中说明依赖状态：
+
+- 当前工作流：`wf-install`
+- 当前模式：待检测 / INSTALL / SWITCH / UPGRADE
+- 必须执行的命令：版本检测、manifest 读取、安装脚本执行或档位切换命令
+- 预期变更范围：`openspec/config.yaml`、`AGENTS.md`、`.codex/skills/wf-*`、可选 `.claude/commands/wf-*`
 
 ## 第一步：检测当前状态，路由到对应模式
 
@@ -273,20 +301,11 @@ B. 取消（先归档再切换）
 
 用户选择目标档位后：
 
-1. 定位对应模板文件：`<agentic-workflow-path>/templates/openspec/config-<tier>.yaml`
-2. 备份当前配置：
+1. 执行安装脚本的 switch 模式，由脚本备份当前配置并渲染 `__WORKFLOW_VERSION__`：
    ```bash
-   cp openspec/config.yaml openspec/config.yaml.bak
+   bash "<agentic-workflow-path>/install.sh" --switch --type <tier> --target <current-dir> --no-interactive
    ```
-3. 复制新配置：
-   ```bash
-   cp <agentic-workflow-path>/templates/openspec/config-<tier>.yaml openspec/config.yaml
-   ```
-4. 若目标档位为 `fullstack`，额外创建目录：
-   ```bash
-   mkdir -p openspec/specs/frontend openspec/specs/backend
-   ```
-5. 输出：
+2. 输出：
    ```
    ✓ 已切换到 <tier-name> 档位。原配置已备份为 openspec/config.yaml.bak。
    ⚠ 注意：config.yaml 已更新，如有自定义规则请手动迁移。
@@ -296,3 +315,13 @@ B. 取消（先归档再切换）
 ```
 当前已经是 <tier-name> 档位，无需切换。
 ```
+
+## 收尾审计
+
+完成前必须输出执行审计：
+
+- `wf-install`：已执行
+- 模式：INSTALL / SWITCH / UPGRADE
+- 检测命令：列出实际运行的命令和结果摘要
+- 变更范围：列出已写入、已备份或跳过的文件
+- 后续动作：提示是否需要刷新 Codex 会话以加载新 skill

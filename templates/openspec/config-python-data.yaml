@@ -1,6 +1,6 @@
 schema: spec-driven
 # agentic-workflow-tier: python-data
-# agentic-workflow-version: 1.1.7
+# agentic-workflow-version: __WORKFLOW_VERSION__
 
 context: |
   本项目为 Python 数据/报表类项目。openspec/specs/project.md 含完整上下文。

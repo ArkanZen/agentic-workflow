@@ -9,6 +9,32 @@ description: |
 
 适用于跨模块、架构变更、业务边界不清晰或实现风险较高的任务。
 
+## 强制依赖清单
+
+必须在对应阶段开始前加载指定 skill 的 `SKILL.md`。不得只按方法论摘要执行，也不得把“调用 skill”理解为普通文字说明。
+
+```yaml
+required_skills:
+  exploration:
+    - superpowers:brainstorming
+  task_decomposition:
+    - superpowers:writing-plans
+  final_verification:
+    - superpowers:verification-before-completion
+required_workflows:
+  proposal:
+    - openspec-propose
+  implementation:
+    - openspec-apply-change
+  archive:
+    - openspec-archive-change
+required_reviews:
+  design_gate:
+    - /gstack-plan-eng-review
+```
+
+若宿主环境没有对应 skill 或审查命令，必须先明确说明缺失项和影响，再等待用户确认是否降级继续；不得声称已加载或已审查。
+
 ## Codex App 交互规则
 
 - 有选项的地方，优先使用 Codex App 提供的 UI 交互工具（如 `request_user_input` 或当前宿主暴露的等价工具）。
@@ -16,19 +42,39 @@ description: |
 - 探索结果、OpenSpec 产物、最终 tasks 和归档/提交决策都必须暂停等待用户确认。
 - 所有本地文件链接必须使用绝对路径，方便 Codex App 直接打开。
 
+## 启动自检
+
+开始执行时必须先展示或内部完成以下自检，并在首条进展中说明已加载的依赖：
+
+- 当前工作流：`wf-complex`
+- 必须加载的 Superpowers skill：`brainstorming`、`writing-plans`、`verification-before-completion`
+- 必须执行的 OpenSpec workflow：`openspec-propose`、`openspec-apply-change`、`openspec-archive-change`
+- 必须执行的审查：`/gstack-plan-eng-review`
+- 已加载状态：逐项标记已加载 / 未加载并说明降级原因
+
 执行以下步骤：
 1. 读取 openspec/config.yaml 中 commit_checkpoints.start 规则并执行。
-2. 调用 brainstorming skill 探索需求、边界、风险和替代方案
+2. 加载并执行 `superpowers:brainstorming`，探索需求、边界、风险和替代方案。
 3. 展示探索结论、风险和推荐路径，使用 UI 交互询问用户是否确认进入 OpenSpec 提案。
-4. 用户确认后，执行 /openspec-propose（含 /gstack-plan-eng-review gate）
+4. 用户确认后，执行 `/openspec-propose`（含 `/gstack-plan-eng-review` gate）；不得手写替代 proposal 流程。
 5. proposal/design/tasks 生成后必须展示：
    - proposal.md / design.md / tasks.md 的绝对路径链接
    - design 顶部 gate 状态摘要
    - tasks.md 中的 checkbox 清单摘要
 6. 使用 UI 交互询问用户是否确认该设计和 tasks；用户确认前不得实现。
-7. apply 前按 writing-plans 风格细化任务分解，并再次展示最终任务摘要。
-8. 用户确认后，执行 /openspec-apply-change 实现。
-9. 完成后执行 verification-before-completion 验收，并在结果中说明已验证项。
+7. apply 前加载并执行 `superpowers:writing-plans` 细化任务分解，并再次展示最终任务摘要。
+8. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
+9. 完成后加载并执行 `superpowers:verification-before-completion` 验收，并在结果中说明已验证项。
 10. 验证通过后同步 `tasks.md` 勾选状态；若存在无法确认完成的任务，先告知用户并保留未勾选状态。
 11. 询问用户是否归档；用户确认后再执行 /openspec-archive-change。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑。
 12. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
+
+## 收尾审计
+
+完成前必须输出执行审计：
+
+- `wf-complex`：已执行
+- 强制依赖 skill：逐项列出已加载 / 降级原因
+- OpenSpec workflow：列出 `propose`、`apply`、`archive` 的执行状态
+- GStack gate：列出审查命令、状态和是否阻断
+- 验证：列出实际运行的命令和结果

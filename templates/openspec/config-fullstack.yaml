@@ -1,6 +1,6 @@
 schema: spec-driven
 # agentic-workflow-tier: fullstack
-# agentic-workflow-version: 1.1.7
+# agentic-workflow-version: __WORKFLOW_VERSION__
 
 context: |
   本项目为前后端合体（fullstack）项目，openspec/specs/ 下含 frontend/ 和 backend/ 子目录。

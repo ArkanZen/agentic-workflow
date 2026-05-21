@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.7 - 2026-05-21
+
+- 工作流生成工件后强制展示完整绝对路径（非相对路径），便于用户直接定位文件。
+- `openspec/config.yaml` 新增 `naming` 节：设计文档文件名使用中文，项目专有名词（API、模型名、功能 key）可保留英文；OpenSpec change 目录名继续使用 kebab-case。
+
 ## 1.1.6 - 2026-05-21
 
 - 迁移版本检测到 GitHub Releases：`install.sh` 安装时自动检测 GitHub remote URL 写入 manifest.json `sourceRepo` 字段；`/wf-install` 优先通过 `git ls-remote --tags` 获取最新 release tag，无需本地仓库路径，无需手动 bump 版本。

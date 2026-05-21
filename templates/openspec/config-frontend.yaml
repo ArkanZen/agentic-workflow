@@ -1,6 +1,6 @@
 schema: spec-driven
 # agentic-workflow-tier: frontend
-# agentic-workflow-version: 1.1.6
+# agentic-workflow-version: 1.1.7
 
 context: |
   完整项目上下文见 openspec/specs/project.md。

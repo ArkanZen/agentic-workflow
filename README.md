@@ -170,7 +170,7 @@ bash ~/agentic-workflow/install.sh \
 
 ```yaml
 # agentic-workflow-tier: backend
-# agentic-workflow-version: 1.1.2
+# agentic-workflow-version: 1.1.4
 ```
 
 后续其他人更新工作流时，先拉取本仓库最新代码，再在目标项目运行 `/wf-install`。AI 会读取目标项目中的 `agentic-workflow-version`，再对比本仓库 `VERSION`：版本落后时进入升级模式，版本一致时进入切换档位模式。
@@ -189,13 +189,19 @@ bash ~/agentic-workflow/install.sh \
 | `/wf-debug` | 找 bug、补测试、重构 | Superpowers Debug / TDD 方法论 | 缺少 Superpowers 时按模板方法论执行 |
 | `/wf-plan` | 产品/架构方案，先判断值不值得做 | GStack 产品/工程评估 | 缺少 GStack 时只能做普通讨论 |
 
+### Codex App 适配
+
+Codex 版 `/wf-quick`、`/wf-small` 和 `/wf-complex` 会在关键产物生成后暂停，让用户先确认再进入实现：proposal / design / tasks 会以本地绝对路径链接展示，并附带 gate 状态和任务摘要。存在选项时，Codex App 中优先使用 UI 交互工具；如果当前环境没有 UI 工具，才退化为明确的文本选项。
+
+Git checkpoint 也按 Codex App 交互优化：开始前发现脏工作区时优先给出「提交现有改动 / 跳过 / 取消」选项；结束时先完成归档决策和 spec sync，再进入最终提交，避免归档后又留下未提交的 spec 变更。
+
 ### 切换档位
 
 项目类型变了？用 `/wf-install` 命令，AI 会检测当前档位并引导切换。
 
 ### 归档策略
 
-`/wf-quick`、`/wf-small` 和 `/wf-complex` 都不会在实现完成后静默归档。它们会先完成必要验证或 review，然后询问是否归档；用户确认后才执行 `/openspec-archive-change`。归档命令仍会保留变更选择、未完成任务检查和 delta spec 同步确认。
+`/wf-quick`、`/wf-small` 和 `/wf-complex` 都不会在实现完成后静默归档。它们会先完成必要验证或 review，然后询问是否归档；用户确认后才执行 `/openspec-archive-change`。归档命令仍会保留变更选择、未完成任务检查和 delta spec 同步确认。最终 commit 必须发生在归档决策之后：选择归档时先归档再 commit，选择暂不归档时提交 active change 和实现改动。
 
 ---
 

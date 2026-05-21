@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.4 - 2026-05-21
+
+- 深度优化 Codex 版工作流交互：`/wf-quick`、`/wf-small`、`/wf-complex` 在 proposal / design / tasks 等关键产物后暂停确认，并展示本地路径、gate 状态和任务摘要。
+- Codex App 中存在选项时优先使用 UI 交互工具；不可用时才退化为明确文本选项，覆盖设计确认、checkpoint、归档和安装/切换选择。
+- 调整最终提交顺序：先完成归档决策和 spec sync，再执行 end checkpoint commit，避免归档后残留未提交文件。
+- 更新所有 OpenSpec 配置模板和根配置的 checkpoint 文案，并将模板版本提升到 `1.1.4`。
+
 ## 1.1.3 - 2026-05-20
 
 - 将 `docs/` 目录加入 `.gitignore` 并从仓库追踪中移除，避免内部设计文档随仓库公开。

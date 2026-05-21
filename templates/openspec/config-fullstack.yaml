@@ -1,6 +1,6 @@
 schema: spec-driven
 # agentic-workflow-tier: fullstack
-# agentic-workflow-version: 1.1.2
+# agentic-workflow-version: 1.1.4
 
 context: |
   本项目为前后端合体（fullstack）项目，openspec/specs/ 下含 frontend/ 和 backend/ 子目录。
@@ -73,19 +73,27 @@ commit_checkpoints:
       运行 git status --short。若无未提交文件，静默继续。
       若有未提交文件：
         展示文件列表，提示"检测到 N 个文件未提交（上次变更遗留），建议先提交再开始新需求"。
-        询问用户：请输入 commit message（或输入 'ai' 让 AI 帮你生成，输入 's' 跳过）。
-        用户输入 message：执行 git add -A && git commit -m "<message>"。
-        用户输入 'ai'：读取 git diff，生成 message，展示给用户确认后执行 git commit。
-        用户输入 's' 或直接回车：直接进入工作流，不再追问。
+        在 Codex App 中优先使用 UI 交互工具展示选项：
+          A. 提交现有改动（推荐：让 AI 生成 message，展示确认后提交）
+          B. 跳过 checkpoint，继续当前 workflow
+          C. 取消当前 workflow
+        UI 工具不可用时，退化为文本选项：ai / s / cancel。
+        用户选择提交：读取 git diff，生成 message，展示给用户确认后执行 git add -A && git commit。
+        用户选择跳过：直接进入工作流，不再追问。
+        用户选择取消：停止 workflow，不做后续动作。
 
   end:
     enabled_for: [wf-quick, wf-small, wf-complex]
     behavior: |
-      验证通过后，基于当前会话已有的 proposal 标题和 tasks 列表（无需额外读取文件）
-      生成 conventional commit message（类型从 feat/fix/docs/refactor 中选择）。
+      此 checkpoint 必须在归档决策之后执行：如果用户选择归档，应先完成 /openspec-archive-change
+      及 spec sync，再进入最终提交；如果用户选择暂不归档，则提交 active change 和实现改动。
+      基于当前会话已有的 proposal 标题、tasks 列表、验证结果和归档结果生成 conventional commit message
+      （类型从 feat/fix/docs/refactor 中选择）。
       message body 包含本次 tasks 的摘要列表。
-      展示给用户，询问 [Y/编辑/跳过]。
-      用户选 Y：执行 git add -A && git commit -m "<message>"，输出 commit hash，进入归档询问。
-      用户选编辑：用用户提供的 message 执行提交，进入归档询问。
-      用户跳过：直接进入归档询问，不再追问。
-      注意：此步骤不读取 git diff，所有 message 素材来自会话上下文，避免额外 token 开销。
+      在 Codex App 中优先使用 UI 交互工具展示选项：
+        A. 使用建议 message 提交（推荐）
+        B. 编辑 message 后提交
+        C. 跳过提交
+      UI 工具不可用时，退化为文本选项：Y / 编辑 / 跳过。
+      用户选择提交：执行 git add -A && git commit -m "<message>"，输出 commit hash。
+      用户跳过：保留工作区改动，并明确提示尚未提交。

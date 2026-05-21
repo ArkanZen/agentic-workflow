@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.6 - 2026-05-21
+
+- 迁移版本检测到 GitHub Releases：`install.sh` 安装时自动检测 GitHub remote URL 写入 manifest.json `sourceRepo` 字段；`/wf-install` 优先通过 `git ls-remote --tags` 获取最新 release tag，无需本地仓库路径，无需手动 bump 版本。
+- 旧版 manifest（无 `sourceRepo`）自动退化为本地路径模式，向后兼容。
+- README 新增"发布新版本"章节，说明 `v<semver>` tag 约定。
+
 ## 1.1.5 - 2026-05-21
 
 - 补全 Codex `/wf-install` 的 UI 优先规则：INSTALL 步骤 3（档位推荐）、步骤 4（仓库路径）、SWITCH 步骤 1（未归档警告）、步骤 3（仓库路径）、步骤 4（档位选择）均改为优先使用 AskUserQuestion 或等价 UI 交互工具；SWITCH 步骤 1 的文本 `[y/N]` 改为结构化 A/B 选项。

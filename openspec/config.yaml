@@ -12,12 +12,23 @@ context: |
 # vibe 模式下所有变更均走快速通道，无需经过 design gate
 quick_change_criteria: 所有变更均可走快速通道（vibe 模式）
 
+naming:
+  design_docs: |
+    设计文档（docs/ 下的独立 spec 文档、设计稿等）的文件名使用中文描述，
+    日期前缀保留 YYYY-MM-DD 格式（例：2026-05-21-新站点详情页设计.md）。
+    项目专有名词（API 名称、模型名、功能 key、技术术语）可保留英文。
+  openspec_changes: |
+    OpenSpec change 目录名（openspec/changes/<name>/）继续使用 kebab-case 英文，
+    便于文件系统和 CLI 兼容。change 内部工件标题（H1）应使用中文。
+
 rules:
   proposal:
     - 提案控制在 600 字以内。
     - 必须包含「非目标」章节，明确圈定边界。
     - 安全规则：禁止在任何工件中写入 Token、密码、凭证或内部地址。
       只引用配置键名，不写实际值。
+    - 路径展示规则：每次生成或写入任何工件（proposal、design、tasks、spec 文档）后，
+      必须输出该文件的完整绝对路径（而非相对路径）。
 
   specs:
     - Delta spec 须用「扩展/覆盖」语言引用 system.md 中已有基线，不重复陈述。

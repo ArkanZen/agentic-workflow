@@ -178,10 +178,32 @@ bash ~/agentic-workflow/install.sh \
 
 ```yaml
 # agentic-workflow-tier: backend
-# agentic-workflow-version: 1.1.4
+# agentic-workflow-version: 1.1.5
 ```
 
-后续其他人更新工作流时，先拉取本仓库最新代码，再在目标项目运行 `/wf-install`。AI 会读取目标项目中的 `agentic-workflow-version`，再对比本仓库 `VERSION`：版本落后时进入升级模式，版本一致时进入切换档位模式。
+同时在 `.agentic-workflow/manifest.json` 记录 `sourceRepo`（安装时从 git remote 自动检测的 GitHub URL）。
+
+**升级检测方式：**
+- 若 manifest 中 `sourceRepo` 非空：运行 `/wf-install` 时自动通过 `git ls-remote` 检查 GitHub 最新 release tag，无需本地仓库路径，无需手动比对版本号。
+- 若 `sourceRepo` 为空（旧版本 manifest 或本地无 remote）：退化为原有本地路径比对模式。
+
+### 发布新版本
+
+开源发布时，其他项目通过 **GitHub Releases** 检测新版本。发布步骤：
+
+1. 更新 `VERSION`、`CHANGELOG.md` 和所有配置模板中的版本号
+2. 提交并推送到 GitHub：
+   ```bash
+   git push origin master
+   ```
+3. 在 GitHub 上创建 Release，**tag 格式必须为 `v<semver>`**（例如 `v1.2.0`）：
+   ```bash
+   git tag v1.2.0
+   git push origin v1.2.0
+   ```
+   或在 GitHub 网页 → Releases → "Create a new release" → 填写 tag `v1.2.0`
+
+安装了此工作流的其他项目运行 `/wf-install` 时，将自动检测到新版本并提示升级。
 
 ---
 

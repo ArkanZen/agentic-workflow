@@ -17,23 +17,30 @@ description: |
 
 ## 第一步：检测当前状态，路由到对应模式
 
-运行 shell 命令检查 `openspec/config.yaml` 是否存在，并读取版本标记：
+运行 shell 命令检查 `openspec/config.yaml` 是否存在，并读取版本标记和 manifest：
 
 ```bash
 test -f openspec/config.yaml && echo "EXISTS" || echo "NOT_FOUND"
 grep "agentic-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VERSION"
+cat .agentic-workflow/manifest.json 2>/dev/null || echo "NO_MANIFEST"
 ```
 
 路由规则：
 - 若文件**不存在** → 进入 **INSTALL 模式**
-- 若文件**存在** AND **不含**工作流版本注释 → 进入 **UPGRADE 模式**
+- 若文件**存在** AND **不含**工作流版本注释 → 进入 **UPGRADE 模式**（版本未知）
 - 若文件**存在** AND 含工作流版本注释：
-  1. 询问或确认 agentic-workflow 仓库路径。
-  2. 读取 `<agentic-workflow-path>/VERSION`，作为可安装的最新版本。
-  3. 将 `openspec/config.yaml` 中的当前版本与仓库版本按语义版本号比较。
-  4. 若当前版本低于仓库版本 → 进入 **UPGRADE 模式**。
-  5. 若当前版本等于仓库版本 → 进入 **SWITCH 模式**。
-  6. 若当前版本高于仓库版本 → 提醒用户本地仓库可能落后，询问是否继续切换档位。
+  1. 读取 manifest.json 中的 `sourceRepo` 和 `workflowVersion`。
+  2. **若 `sourceRepo` 非空**（远程模式）：
+     - 运行 `git ls-remote --tags --refs "<sourceRepo>" 'v[0-9]*' 2>/dev/null | awk '{print $2}' | sed 's|refs/tags/||' | sort -V | tail -1` 获取最新 tag
+     - 成功且有 tag：去掉 `v` 前缀后与 `workflowVersion` 比较
+       - 最新版本 > 已安装版本 → 进入 **UPGRADE 模式（远程）**
+       - 最新版本 = 已安装版本 → 进入 **SWITCH 模式**
+     - 成功但无 tag：用 UI 工具提示「GitHub 仓库暂无 release tag，无法远程检测」，降级本地路径模式
+     - 命令失败：用 UI 工具提示「远程版本检测失败」，降级本地路径模式
+  3. **若 `sourceRepo` 为空**（本地模式，向后兼容）：
+     - 询问或确认 agentic-workflow 仓库路径（用 UI 交互工具）
+     - 读取 `<agentic-workflow-path>/VERSION`，与 `workflowVersion` 比较
+     - 低于仓库版本 → **UPGRADE 模式（本地）**；相等 → **SWITCH 模式**；高于 → UI 提示并询问
 
 > Codex 注意：使用 shell 工具执行命令；读取文件用文件读取工具；向用户提问用 AskUserQuestion 或等价的交互工具。
 
@@ -42,10 +49,33 @@ grep "agentic-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VE
 ## UPGRADE 模式（升级模板版本）
 
 进入原因包括：
-- `openspec/config.yaml` 存在但缺少版本标记，说明工作流是在引入版本跟踪之前安装的。
-- 已安装版本低于 agentic-workflow 仓库 `VERSION` 中记录的版本。
+- `openspec/config.yaml` 存在但缺少版本标记。
+- 远程或本地检测到有新版本可用。
 
-展示以下提示（用 AskUserQuestion）：
+**远程 UPGRADE（sourceRepo 非空）时**，用 AskUserQuestion 展示：
+```
+检测到新版本可用！
+
+已安装版本：<workflowVersion>
+最新版本：<latest-tag>（来自 GitHub Releases）
+源仓库：<sourceRepo>
+本地仓库路径：<workflowPath>（来自 manifest）
+
+选项：
+1. 更新本地仓库并升级 — git pull + 重新安装（推荐）
+2. 切换档位 — 跳过升级，直接切换档位
+3. 取消
+```
+
+若用户选择「更新本地仓库并升级」：
+- 若 `workflowPath` 有效：
+  ```bash
+  git -C "<workflowPath>" pull --ff-only
+  bash "<workflowPath>/install.sh" --type <tier> --target <current-dir> --no-interactive --upgrade
+  ```
+- 若 `workflowPath` 无效，提示：`git clone <sourceRepo> <path>` 后重新运行 `/wf-install`
+
+**本地 UPGRADE（sourceRepo 为空）时**，用 AskUserQuestion 展示：
 ```
 检测到可升级的工作流配置。
 
@@ -59,7 +89,7 @@ grep "agentic-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VE
 ```
 
 若用户选择「升级配置」：
-- 询问 agentic-workflow 仓库路径（同 INSTALL 模式步骤 4），然后执行：
+- 用 AskUserQuestion 询问 agentic-workflow 仓库路径，然后执行：
   ```bash
   bash "<agentic-workflow-path>/install.sh" --type <detected-or-asked-tier> --target <current-dir> --no-interactive --upgrade
   ```

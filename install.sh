@@ -22,6 +22,7 @@ if [[ -f "$WORKFLOW_DIR/VERSION" ]]; then
 else
   WORKFLOW_VERSION="unknown"
 fi
+SOURCE_REPO=""  # 由 detect_source_repo() 在安装执行阶段填充
 
 # ── 参数解析 ──────────────────────────────────────────────────────────────────
 NO_INTERACTIVE=false
@@ -114,6 +115,31 @@ json_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
+# 检测 agentic-workflow 仓库的 GitHub 远程 URL，供 manifest 写入 sourceRepo
+# 返回 HTTPS URL（去 .git 后缀），无法检测时返回空字符串
+detect_source_repo() {
+  local url
+  url="$(git -C "$WORKFLOW_DIR" remote get-url origin 2>/dev/null)" || { echo ""; return; }
+  # SSH → HTTPS: git@github.com:owner/repo.git → https://github.com/owner/repo
+  if [[ "$url" =~ ^git@github\.com:(.+)$ ]]; then
+    url="https://github.com/${BASH_REMATCH[1]}"
+  fi
+  url="${url%.git}"
+  [[ "$url" =~ ^https://github\.com/ ]] && echo "$url" || echo ""
+}
+
+# 通过 git ls-remote 查询 GitHub repo 最新 release tag，返回去掉 v 前缀的版本号
+# 失败或无 tag 时返回空字符串；无需 auth、无 rate limit
+get_latest_remote_version() {
+  local repo_url="$1" latest
+  latest="$(git ls-remote --tags --refs "$repo_url" 'v[0-9]*' 2>/dev/null \
+    | awk '{print $2}' \
+    | sed 's|refs/tags/||' \
+    | sort -V \
+    | tail -1)"
+  echo "${latest#v}"
+}
+
 # 计算文件哈希，优先使用 macOS 默认可用的 shasum
 hash_file() {
   local file="$1"
@@ -155,6 +181,7 @@ write_manifest() {
     printf '  "tier": "%s",\n' "$(json_escape "$tier")"
     printf '  "installedAt": "%s",\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     printf '  "workflowPath": "%s",\n' "$(json_escape "$WORKFLOW_DIR")"
+    printf '  "sourceRepo": "%s",\n' "$(json_escape "$SOURCE_REPO")"
     printf '  "hosts": {\n'
     printf '    "claude": %s,\n' "$install_claude"
     printf '    "codex": %s\n' "$install_codex"
@@ -515,6 +542,9 @@ fi
 # 第七步：执行安装
 # ══════════════════════════════════════════════════════════════════════════════
 step "安装中..."
+
+# 检测 GitHub 远程 URL，写入 manifest.json sourceRepo 字段
+SOURCE_REPO="$(detect_source_repo)"
 
 # 辅助：复制文件，有冲突时询问是否覆盖；升级模式下自动覆盖受控模板
 copy_file() {

@@ -5,6 +5,8 @@ schema: spec-driven
 context: |
   本项目为 Python 数据/报表类项目。openspec/specs/project.md 含完整上下文。
   AI 在生成工件时须先读取该文件。
+  宿主命令映射：Claude Code 使用 /plan-eng-review、/plan-design-review、/cso、/review；
+  Codex App 使用 /gstack-plan-eng-review、/gstack-plan-design-review、/gstack-cso、/gstack-review。
 
 # 快速通道判定标准（满足以下全部条件时可用 /wf-quick 跳过 design gate）
 quick_change_criteria: |

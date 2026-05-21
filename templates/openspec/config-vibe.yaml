@@ -6,6 +6,8 @@ schema: spec-driven
 context: |
   完整项目上下文见 openspec/specs/project.md。
   AI 在生成每个工件时须先读取该文件。
+  宿主命令映射：Claude Code 使用 /plan-eng-review、/plan-design-review、/cso、/review；
+  Codex App 使用 /gstack-plan-eng-review、/gstack-plan-design-review、/gstack-cso、/gstack-review。
 
 # vibe 模式下所有变更均走快速通道，无需经过 design gate
 quick_change_criteria: 所有变更均可走快速通道（vibe 模式）

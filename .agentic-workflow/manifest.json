@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "workflowVersion": "1.1.4",
+  "tier": "vibe",
+  "installedAt": "2026-05-21T03:35:16Z",
+  "workflowPath": "/Users/ryan/aiworkspace/agentic-workflow",
+  "hosts": {
+    "claude": true,
+    "codex": true
+  },
+  "gstackCommandMap": {
+    "claude": {
+      "engineeringReview": "/plan-eng-review",
+      "designReview": "/plan-design-review",
+      "securityReview": "/cso",
+      "codeReview": "/review"
+    },
+    "codex": {
+      "engineeringReview": "/gstack-plan-eng-review",
+      "designReview": "/gstack-plan-design-review",
+      "securityReview": "/gstack-cso",
+      "codeReview": "/gstack-review"
+    }
+  },
+  "files": [
+    {"path": ".claude/CLAUDE.md", "sha256": "08a3387096d08f678caf5ef75da47173cbf92363e925a7b3d249d8c63d7eba77"},
+    {"path": ".claude/commands/wf-complex.md", "sha256": "44ec2abfa541e7dd01cd91235056492b1d2dd391deb862132fea82e06bb51713"},
+    {"path": ".claude/commands/wf-debug.md", "sha256": "dc043ae166e23e9ae252a89643c379ff78697155e104f9db94106d6cc335183f"},
+    {"path": ".claude/commands/wf-install.md", "sha256": "3e64c6a190335215a0754c4686d4c41fce545dccf1467076a484df1afceee988"},
+    {"path": ".claude/commands/wf-plan.md", "sha256": "a4799cf422507bcd17ba28dfff4d95b5633eae7ab9b3bbb01e0fa1b3ce731945"},
+    {"path": ".claude/commands/wf-quick.md", "sha256": "647a667e918d364c5eb2e4e57bd616e2959c0859ee0a782dcdf145ad126853cb"},
+    {"path": ".claude/commands/wf-small.md", "sha256": "4aa32996da9a57eb02dd9b143674f97d8e9549c798a63a77eb2345814e9e2aec"},
+    {"path": ".codex/skills/wf-complex/SKILL.md", "sha256": "dd5924afa9866f2154278404b655041af21037c1de30f1f5608a64dda1c37658"},
+    {"path": ".codex/skills/wf-debug/SKILL.md", "sha256": "634c693ee619373117dec6ccca4aecf3b9448983ea61d0d52b7c343b22a95bc3"},
+    {"path": ".codex/skills/wf-install/SKILL.md", "sha256": "e1a24024a4b2272147a55104b79aae51513514417a6d9259aeaea4551a79f379"},
+    {"path": ".codex/skills/wf-plan/SKILL.md", "sha256": "7d097d1d4fc7f708fadcf5cf8b97775f08122ae5765103fd9570c8a6e939d97d"},
+    {"path": ".codex/skills/wf-quick/SKILL.md", "sha256": "b856666a74157d97e069930bf30936c4ed7e9220c601b1179cbe6178ac4a5094"},
+    {"path": ".codex/skills/wf-small/SKILL.md", "sha256": "6ca28c657cfd3ff0a89a2a832da894c50274523680cd7250ec0cc62762dc4607"},
+    {"path": "AGENTS.md", "sha256": "6cfbdc4784d54f713026b92e8787675358090995c7155cf0bdc2ffadd0401977"},
+    {"path": "openspec/config.yaml", "sha256": "0528974461f0002f1e80df8f95e38fd1e3fcf052d8e8dcbe8a7e1bb602733817"}
+  ]
+}

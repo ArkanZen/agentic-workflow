@@ -98,6 +98,14 @@ test -d ~/.codex/skills/gstack || ls ~/.codex/skills/gstack-* 2>/dev/null
 - 找不到 `~/.codex/skills/gstack` 或 `~/.codex/skills/gstack-*`：Codex 侧 GStack 未安装，GStack 审查命令不可用。
 - Superpowers 未安装：不影响安装，但 `/wf-complex`、`/wf-debug` 会降级。
 
+安装后可运行工作流自检：
+
+```bash
+bash ~/agentic-workflow/validate-workflow.sh /path/to/your/project
+```
+
+自检会检查 `openspec/config.yaml` 版本、`AGENTS.md` 工作流块、`.agentic-workflow/manifest.json`、Claude/Codex 模板漂移、GStack/Superpowers 可用性，以及模板目录中的 `.DS_Store` 等发布噪音。
+
 ---
 
 ## 五种工作流档位
@@ -194,6 +202,17 @@ bash ~/agentic-workflow/install.sh \
 Codex 版 `/wf-quick`、`/wf-small` 和 `/wf-complex` 会在关键产物生成后暂停，让用户先确认再进入实现：proposal / design / tasks 会以本地绝对路径链接展示，并附带 gate 状态和任务摘要。存在选项时，Codex App 中优先使用 UI 交互工具；如果当前环境没有 UI 工具，才退化为明确的文本选项。
 
 Git checkpoint 也按 Codex App 交互优化：开始前发现脏工作区时优先给出「提交现有改动 / 跳过 / 取消」选项；结束时先完成归档决策和 spec sync，再进入最终提交，避免归档后又留下未提交的 spec 变更。
+
+安装脚本会创建或更新 `AGENTS.md`，作为 Codex 的项目级入口。它还会写入 `.agentic-workflow/manifest.json`，记录当前模板版本、档位、启用宿主、受控文件哈希，以及 GStack 命令在 Claude Code 与 Codex App 中的映射。后续 `/wf-install` 或 `validate-workflow.sh` 可用它发现 config 版本一致但 skill 文件漂移的情况。
+
+GStack gate 使用同一套语义，但不同宿主命令名不同：
+
+| 审查动作 | Claude Code | Codex App |
+|----------|-------------|-----------|
+| 工程审查 | `/plan-eng-review` | `/gstack-plan-eng-review` |
+| UI/设计审查 | `/plan-design-review` | `/gstack-plan-design-review` |
+| 安全审查 | `/cso` | `/gstack-cso` |
+| 代码审查 | `/review` | `/gstack-review` |
 
 ### 切换档位
 

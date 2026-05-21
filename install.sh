@@ -109,6 +109,89 @@ update_html_marker() {
   sed -i.bak "s|<!-- ${WORKFLOW_MARKER_PREFIX}-${key}: .* -->|<!-- ${WORKFLOW_MARKER_PREFIX}-${key}: ${value} -->|" "$file"
 }
 
+# 转义 JSON 字符串，供 manifest 写入路径和版本信息
+json_escape() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+# 计算文件哈希，优先使用 macOS 默认可用的 shasum
+hash_file() {
+  local file="$1"
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file" | awk '{print $1}'
+  else
+    cksum "$file" | awk '{print $1 "-" $2}'
+  fi
+}
+
+# 收集受控安装文件，用于 manifest 记录本次安装的真实落点
+collect_manifest_files() {
+  local target="$1"
+  {
+    [[ -f "$target/openspec/config.yaml" ]] && echo "openspec/config.yaml"
+    [[ -f "$target/AGENTS.md" ]] && echo "AGENTS.md"
+    [[ -f "$target/.claude/CLAUDE.md" ]] && echo ".claude/CLAUDE.md"
+    find "$target/.claude/commands" -maxdepth 1 -type f -name 'wf-*.md' 2>/dev/null | sed "s|^$target/||"
+    find "$target/.codex/skills" -path '*/wf-*/*' -type f 2>/dev/null | sed "s|^$target/||"
+  } | sort
+}
+
+# 写入安装清单，避免只看 config.yaml 版本导致宿主 skill 漂移不可见
+write_manifest() {
+  local target="$1" tier="$2" install_claude="$3" install_codex="$4"
+  local manifest_dir="$target/.agentic-workflow"
+  local manifest="$manifest_dir/manifest.json"
+  local files_file rel abs hash comma
+  mkdir -p "$manifest_dir"
+  files_file="$(mktemp)"
+  collect_manifest_files "$target" > "$files_file"
+
+  {
+    printf '{\n'
+    printf '  "schemaVersion": 1,\n'
+    printf '  "workflowVersion": "%s",\n' "$(json_escape "$WORKFLOW_VERSION")"
+    printf '  "tier": "%s",\n' "$(json_escape "$tier")"
+    printf '  "installedAt": "%s",\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+    printf '  "workflowPath": "%s",\n' "$(json_escape "$WORKFLOW_DIR")"
+    printf '  "hosts": {\n'
+    printf '    "claude": %s,\n' "$install_claude"
+    printf '    "codex": %s\n' "$install_codex"
+    printf '  },\n'
+    printf '  "gstackCommandMap": {\n'
+    printf '    "claude": {\n'
+    printf '      "engineeringReview": "/plan-eng-review",\n'
+    printf '      "designReview": "/plan-design-review",\n'
+    printf '      "securityReview": "/cso",\n'
+    printf '      "codeReview": "/review"\n'
+    printf '    },\n'
+    printf '    "codex": {\n'
+    printf '      "engineeringReview": "/gstack-plan-eng-review",\n'
+    printf '      "designReview": "/gstack-plan-design-review",\n'
+    printf '      "securityReview": "/gstack-cso",\n'
+    printf '      "codeReview": "/gstack-review"\n'
+    printf '    }\n'
+    printf '  },\n'
+    printf '  "files": [\n'
+    comma=""
+    while IFS= read -r rel; do
+      [[ -z "$rel" ]] && continue
+      abs="$target/$rel"
+      [[ -f "$abs" ]] || continue
+      hash="$(hash_file "$abs")"
+      printf '%s    {"path": "%s", "sha256": "%s"}' "$comma" "$(json_escape "$rel")" "$(json_escape "$hash")"
+      comma=$',\n'
+    done < "$files_file"
+    printf '\n  ]\n'
+    printf '}\n'
+  } > "$manifest"
+
+  rm -f "$files_file"
+  ok ".agentic-workflow/manifest.json"
+  INSTALLED+=(".agentic-workflow/manifest.json")
+}
+
 # ── Banner ─────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════╗${RESET}"
@@ -169,6 +252,9 @@ else
   exit 1
 fi
 
+INSTALLED=()
+SKIPPED=()
+
 # ── Switch 模式 ───────────────────────────────────────────────────────────────
 # --switch 只替换 openspec/config.yaml，不做完整安装，安装后退出
 if [[ "$SWITCH_MODE" == "true" ]]; then
@@ -219,6 +305,11 @@ if [[ "$SWITCH_MODE" == "true" ]]; then
     mkdir -p "$TARGET_DIR/openspec/specs/frontend" "$TARGET_DIR/openspec/specs/backend"
     ok "openspec/specs/frontend/ 和 backend/（已创建）"
   fi
+  SWITCH_CLAUDE=false
+  SWITCH_CODEX=false
+  [[ -d "$TARGET_DIR/.claude" ]] && SWITCH_CLAUDE=true
+  [[ -d "$TARGET_DIR/.codex" ]] && SWITCH_CODEX=true
+  write_manifest "$TARGET_DIR" "$ARG_TYPE" "$SWITCH_CLAUDE" "$SWITCH_CODEX"
   echo ""
   echo -e "  ${GREEN}${BOLD}切换完成。${RESET}"
   echo ""
@@ -408,7 +499,8 @@ echo -e "    • openspec/specs/project.md 和 system.md（如不存在则创建
 [[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/CLAUDE.md（如不存在则创建）"
 [[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • .codex/skills/wf-{quick,small,complex,debug,plan}/ + wf-install/"
 [[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • 检测官方 GStack Codex skills（未安装则提示官方安装命令，不复制旧版内置 GStack skills）"
-echo -e "    • AGENTS.md 追加 workflow 段落（如不存在则跳过）"
+echo -e "    • AGENTS.md workflow 段落（如不存在则创建）"
+echo -e "    • .agentic-workflow/manifest.json（记录安装清单和 host 命令映射）"
 echo ""
 
 # --no-interactive 模式下跳过确认，直接执行
@@ -423,9 +515,6 @@ fi
 # 第七步：执行安装
 # ══════════════════════════════════════════════════════════════════════════════
 step "安装中..."
-
-INSTALLED=()
-SKIPPED=()
 
 # 辅助：复制文件，有冲突时询问是否覆盖；升级模式下自动覆盖受控模板
 copy_file() {
@@ -542,6 +631,16 @@ WORKFLOWBLOCK
   fi
 
   cat << 'WORKFLOWBLOCK'
+
+### Host 命令映射
+`openspec/config.yaml` 中的 gate 规则使用通用审查名称；执行时按宿主映射：
+
+| 审查动作 | Claude Code | Codex App |
+|------|------|------|
+| 工程审查 | `/plan-eng-review` | `/gstack-plan-eng-review` |
+| UI/设计审查 | `/plan-design-review` | `/gstack-plan-design-review` |
+| 安全审查 | `/cso` | `/gstack-cso` |
+| 代码审查 | `/review` | `/gstack-review` |
 
 ### Gate 规则
 见 openspec/config.yaml。design.md 顶部工程审查状态为「阻断」时，
@@ -770,12 +869,20 @@ if [[ "$INSTALL_CODEX" == "true" ]]; then
     "$TARGET_DIR/.codex/skills/wf-install" ".codex/skills/wf-install"
 fi
 
-# — AGENTS.md 追加 ─────────────────────────────────────────────────────────────
-if [[ -f "$TARGET_DIR/AGENTS.md" ]]; then
-  upsert_workflow_block "$TARGET_DIR/AGENTS.md" "Codex" "$PROJECT_TYPE" "AGENTS.md"
-else
-  info "AGENTS.md 不存在（跳过）"
+# — AGENTS.md ─────────────────────────────────────────────────────────────────
+if [[ ! -f "$TARGET_DIR/AGENTS.md" ]]; then
+  cat > "$TARGET_DIR/AGENTS.md" << 'AGENTSMD'
+# AGENTS.md
+
+项目级 AI 协作说明。下方 agentic-workflow 受控块由安装脚本维护。
+AGENTSMD
+  ok "AGENTS.md"
+  INSTALLED+=("AGENTS.md")
 fi
+upsert_workflow_block "$TARGET_DIR/AGENTS.md" "Codex" "$PROJECT_TYPE" "AGENTS.md"
+
+# — 安装清单 ──────────────────────────────────────────────────────────────────
+write_manifest "$TARGET_DIR" "$PROJECT_TYPE" "$INSTALL_CLAUDE" "$INSTALL_CODEX"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 第八步：安装摘要
@@ -804,7 +911,8 @@ fi
 if grep -q "TODO: 填写以下各节" "$TARGET_DIR/openspec/specs/system.md" 2>/dev/null; then
   MANUAL_STEPS+=("编辑 openspec/specs/system.md — 填写模块结构、数据流、踩坑清单")
 fi
-MANUAL_STEPS+=("git add openspec/ .claude/ .codex/ AGENTS.md && git commit -m 'feat: install agentic workflow'")
+MANUAL_STEPS+=("运行 ./validate-workflow.sh <目标项目> 检查模板漂移、manifest 和宿主工具")
+MANUAL_STEPS+=("git add openspec/ .claude/ .codex/ AGENTS.md .agentic-workflow/manifest.json && git commit -m 'feat: install agentic workflow'")
 
 echo -e "  ${BOLD}后续步骤：${RESET}"
 for i in "${!MANUAL_STEPS[@]}"; do

@@ -5,6 +5,8 @@ schema: spec-driven
 context: |
   本项目为前后端合体（fullstack）项目，openspec/specs/ 下含 frontend/ 和 backend/ 子目录。
   AI 生成工件时须区分前后端影响范围。完整上下文见 openspec/specs/project.md。
+  宿主命令映射：Claude Code 使用 /plan-eng-review、/plan-design-review、/cso、/review；
+  Codex App 使用 /gstack-plan-eng-review、/gstack-plan-design-review、/gstack-cso、/gstack-review。
 
 # 快速通道判定标准（满足以下全部条件时可用 /wf-quick 跳过 design gate）
 quick_change_criteria: |

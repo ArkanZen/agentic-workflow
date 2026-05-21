@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.5 - 2026-05-21
+
+- 补全 Codex `/wf-install` 的 UI 优先规则：INSTALL 步骤 3（档位推荐）、步骤 4（仓库路径）、SWITCH 步骤 1（未归档警告）、步骤 3（仓库路径）、步骤 4（档位选择）均改为优先使用 AskUserQuestion 或等价 UI 交互工具；SWITCH 步骤 1 的文本 `[y/N]` 改为结构化 A/B 选项。
+- Claude 端 `wf-small`、`wf-complex`、`wf-quick` 新增产物确认节点（绝对路径 + checkbox 摘要 + AskUserQuestion），对齐 Codex 版交互体验。
+- 修正三个工作流的 `commit_checkpoints.end` 调用时机：统一移至归档决策之后，与 `openspec/config.yaml` 规范一致。
+
 ## 1.1.4 - 2026-05-21
 
 - 深度优化 Codex 版工作流交互：`/wf-quick`、`/wf-small`、`/wf-complex` 在 proposal / design / tasks 等关键产物后暂停确认，并展示本地路径、gate 状态和任务摘要。

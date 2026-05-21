@@ -134,7 +134,7 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 
 ### 步骤 3：展示推荐结果，请用户确认
 
-展示所有置信度 > 0 的候选档位，按置信度降序排列（★ 标记仅用于顶级推荐）：
+用 AskUserQuestion（或等价 UI 交互工具）展示所有置信度 > 0 的候选档位，按置信度降序排列（★ 标记仅用于顶级推荐）：
 
 ```
 检测完成，以下是档位推荐（按置信度排序）：
@@ -154,7 +154,7 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 
 ### 步骤 4：执行安装
 
-确认档位后，询问 agentic-workflow 仓库路径（若用户未提供）：
+确认档位后，用 AskUserQuestion（或等价 UI 交互工具）询问 agentic-workflow 仓库路径（若用户未提供）：
 
 ```
 请输入 agentic-workflow 仓库的本地路径（例如：~/workspace/agentic-workflow）：
@@ -192,13 +192,17 @@ for d in openspec/changes/*/; do
 done
 ```
 
-若存在未归档变更（设数量为 N，名称列表为 names），显示警告：
+若存在未归档变更（设数量为 N，名称列表为 names），用 AskUserQuestion（或等价 UI 交互工具）展示警告并询问：
 
 ```
-⚠ 检测到 N 个未归档变更：[names]。切换档位不影响历史记录，但建议先归档完成的变更。继续切换？[y/N]
+⚠ 检测到 N 个未归档变更：[names]。切换档位不影响历史记录，但建议先归档完成的变更。
+
+选项：
+A. 继续切换（忽略未归档变更）
+B. 取消（先归档再切换）
 ```
 
-等待用户回复。若用户回复 `n` 或 `N` 或直接回车，中止操作，提示：
+若用户选择 B 或取消，中止操作，提示：
 ```
 已取消。请先运行 /openspec-archive-change 归档完成的变更。
 ```
@@ -212,13 +216,13 @@ done
 
 ### 步骤 3：获取 agentic-workflow 路径
 
-若尚未知道 agentic-workflow 的本地路径，询问用户：
+若尚未知道 agentic-workflow 的本地路径，用 AskUserQuestion（或等价 UI 交互工具）询问用户：
 「agentic-workflow 仓库在哪里？（输入路径，例：~/projects/agentic-workflow）」
-在执行前用 `test -f <path>/install.sh` 验证路径有效，若无效则提示重新输入。
+在执行前用 `test -f <path>/install.sh` 验证路径有效，若无效则再次用 UI 工具提示重新输入。
 
 ### 步骤 4：展示档位选择
 
-展示所有 5 个档位供选择：
+用 AskUserQuestion（或等价 UI 交互工具）展示所有 5 个档位供选择：
 
 ```
 当前档位：<current-tier-name>

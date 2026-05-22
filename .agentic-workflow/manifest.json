@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
-  "workflowVersion": "1.1.4",
+  "workflowVersion": "1.1.10",
   "tier": "vibe",
-  "installedAt": "2026-05-21T03:35:16Z",
+  "installedAt": "2026-05-22T03:03:04Z",
   "workflowPath": "/Users/ryan/aiworkspace/agentic-workflow",
+  "sourceRepo": "https://github.com/ArkanZen/agentic-workflow",
   "hosts": {
     "claude": true,
     "codex": true
@@ -23,20 +24,20 @@
     }
   },
   "files": [
-    {"path": ".claude/CLAUDE.md", "sha256": "08a3387096d08f678caf5ef75da47173cbf92363e925a7b3d249d8c63d7eba77"},
-    {"path": ".claude/commands/wf-complex.md", "sha256": "44ec2abfa541e7dd01cd91235056492b1d2dd391deb862132fea82e06bb51713"},
+    {"path": ".claude/CLAUDE.md", "sha256": "2710c7442fd103c0e83bc5567a23fca7c5cc53674e9ec33c5e260207ee123a24"},
+    {"path": ".claude/commands/wf-complex.md", "sha256": "dc700cf9220cc4f582ae43fdd80ec4f9fc827e0cd24eba6f0d403c35bbfc14f8"},
     {"path": ".claude/commands/wf-debug.md", "sha256": "dc043ae166e23e9ae252a89643c379ff78697155e104f9db94106d6cc335183f"},
-    {"path": ".claude/commands/wf-install.md", "sha256": "3e64c6a190335215a0754c4686d4c41fce545dccf1467076a484df1afceee988"},
+    {"path": ".claude/commands/wf-install.md", "sha256": "46f76d8426207febf91dfc8a9fe8c6a0bc2c86ca5103f7b0fcd3014c21b94a32"},
     {"path": ".claude/commands/wf-plan.md", "sha256": "a4799cf422507bcd17ba28dfff4d95b5633eae7ab9b3bbb01e0fa1b3ce731945"},
-    {"path": ".claude/commands/wf-quick.md", "sha256": "647a667e918d364c5eb2e4e57bd616e2959c0859ee0a782dcdf145ad126853cb"},
-    {"path": ".claude/commands/wf-small.md", "sha256": "4aa32996da9a57eb02dd9b143674f97d8e9549c798a63a77eb2345814e9e2aec"},
-    {"path": ".codex/skills/wf-complex/SKILL.md", "sha256": "dd5924afa9866f2154278404b655041af21037c1de30f1f5608a64dda1c37658"},
-    {"path": ".codex/skills/wf-debug/SKILL.md", "sha256": "634c693ee619373117dec6ccca4aecf3b9448983ea61d0d52b7c343b22a95bc3"},
-    {"path": ".codex/skills/wf-install/SKILL.md", "sha256": "e1a24024a4b2272147a55104b79aae51513514417a6d9259aeaea4551a79f379"},
-    {"path": ".codex/skills/wf-plan/SKILL.md", "sha256": "7d097d1d4fc7f708fadcf5cf8b97775f08122ae5765103fd9570c8a6e939d97d"},
-    {"path": ".codex/skills/wf-quick/SKILL.md", "sha256": "b856666a74157d97e069930bf30936c4ed7e9220c601b1179cbe6178ac4a5094"},
-    {"path": ".codex/skills/wf-small/SKILL.md", "sha256": "6ca28c657cfd3ff0a89a2a832da894c50274523680cd7250ec0cc62762dc4607"},
-    {"path": "AGENTS.md", "sha256": "6cfbdc4784d54f713026b92e8787675358090995c7155cf0bdc2ffadd0401977"},
-    {"path": "openspec/config.yaml", "sha256": "0528974461f0002f1e80df8f95e38fd1e3fcf052d8e8dcbe8a7e1bb602733817"}
+    {"path": ".claude/commands/wf-quick.md", "sha256": "70ce3b0569ad116862c2a8f2f6232215bcc8b0e065ad771e48ff9e56dd0cf87c"},
+    {"path": ".claude/commands/wf-small.md", "sha256": "4cb7723eadb29d968fe0ad571227f9f3a04bef4a1290a404186a77156b0bd4e1"},
+    {"path": ".codex/skills/wf-complex/SKILL.md", "sha256": "c26a6b4118197da2451cfb4376b52eb0aea5c455266909a07e71062e4ea14592"},
+    {"path": ".codex/skills/wf-debug/SKILL.md", "sha256": "586cf778d12e9c64a8f72e13c8141ac4bf761fc00be034068799806e6d239528"},
+    {"path": ".codex/skills/wf-install/SKILL.md", "sha256": "b10486eab5a8ee43537f9c07e01ff335143afa8119af7f2e5e24774ce9666b99"},
+    {"path": ".codex/skills/wf-plan/SKILL.md", "sha256": "dabc43e7ce500b521bd5d343097789a76c04ac7c29f4b3a4b605688cf4f9b233"},
+    {"path": ".codex/skills/wf-quick/SKILL.md", "sha256": "6606a583163015f24c6dc547f173199abd8e366ae1239517e1583c8e1e7f7065"},
+    {"path": ".codex/skills/wf-small/SKILL.md", "sha256": "41e80cb39e814b91665febe877f467503ee881563cdb12bfb2c4ab736b62f1c4"},
+    {"path": "AGENTS.md", "sha256": "2272ad7e4c5ee45079e2cd261bebc44a52baaa87d0540430e62ce5e0617cae91"},
+    {"path": "openspec/config.yaml", "sha256": "f3fb18d86c8a7a67a5a8257e0fe0980ac69b3d6fb1ac27b257e7827b70c674f9"}
   ]
 }

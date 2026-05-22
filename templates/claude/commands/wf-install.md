@@ -266,7 +266,7 @@ B. 取消（先归档再切换）
 
 用户选择目标档位后：
 
-1. 用 Bash 工具执行安装脚本的 switch 模式，由脚本备份当前配置并渲染 `__WORKFLOW_VERSION__`：
+1. 用 Bash 工具执行安装脚本的 switch 模式，由脚本备份当前配置并渲染 VERSION 占位符：
    ```bash
    bash "<agentic-workflow-path>/install.sh" --switch --type <tier> --target <current-dir> --no-interactive
    ```

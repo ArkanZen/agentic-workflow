@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.10 - 2026-05-22
+
+- 补齐所有 OpenSpec 档位模板中的文件命名规范和路径展示规则，确保新安装项目也能继承中文工件命名与绝对路径输出要求。
+- 增强 `validate-workflow.sh` 的版本源检查，发布前会校验模板是否包含文件命名规范和路径展示规则。
+- 更新 `/wf-install` 文档对 VERSION 占位符的描述，避免与模板渲染实现产生歧义。
+
 ## 1.1.9 - 2026-05-22
 
 - 修复 `openspec/config.yaml` 中 `naming:` 节不生效的问题：openspec CLI 不识别该自定义键，命名规范从未注入 AI 指令。将命名规范合并进 `context:` 字段，确保所有工件（proposal/design/tasks/specs）生成时均能获取中文命名规则。

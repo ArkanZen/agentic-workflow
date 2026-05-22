@@ -124,6 +124,16 @@ check_version_source() {
     else
       fail "$(basename "$file") 未使用 __WORKFLOW_VERSION__ 占位符"
     fi
+    if grep -q "文件命名规范" "$file" 2>/dev/null; then
+      ok "$(basename "$file") 包含文件命名规范"
+    else
+      fail "$(basename "$file") 缺少文件命名规范"
+    fi
+    if grep -q "路径展示规则" "$file" 2>/dev/null; then
+      ok "$(basename "$file") 包含路径展示规则"
+    else
+      fail "$(basename "$file") 缺少路径展示规则"
+    fi
   done
 
   hardcoded_count="$(grep -R "agentic-workflow-version: [0-9]" "$script_dir/templates" 2>/dev/null | wc -l | tr -d ' ')"

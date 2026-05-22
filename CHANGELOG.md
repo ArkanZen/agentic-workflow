@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.9 - 2026-05-22
+
+- 修复 `openspec/config.yaml` 中 `naming:` 节不生效的问题：openspec CLI 不识别该自定义键，命名规范从未注入 AI 指令。将命名规范合并进 `context:` 字段，确保所有工件（proposal/design/tasks/specs）生成时均能获取中文命名规则。
+
 ## 1.1.8 - 2026-05-21
 
 - Codex `/wf-*` 工作流新增强制依赖加载规则：显式声明 required/conditional skills、OpenSpec workflow 和 GStack review，不再只写“按方法论执行”。

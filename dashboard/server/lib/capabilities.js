@@ -125,8 +125,6 @@ function hostSupport(options) {
     status: options.supported ? '已支持' : '未检测到',
     install: options.install,
     version: options.version,
-    updateAction: options.updateAction ?? null,
-    updateHint: options.updateHint,
     updateAvailable: Boolean(options.updateAvailable)
   };
 }
@@ -163,7 +161,7 @@ export async function detectCapabilities() {
   const claudeSuperpowers = await pathExists(path.join(os.homedir(), '.claude/skills/superpowers'))
     || await pathExists(path.join(os.homedir(), '.claude/plugins/superpowers'))
     || codexSuperpowers;
-  const updateCount = [
+  const outdatedCount = [
     openspecVersion.updateAvailable,
     codexGstackVersion.updateAvailable,
     claudeGstackVersion.updateAvailable
@@ -177,7 +175,7 @@ export async function detectCapabilities() {
         codexGstack || claudeGstack,
         codexSuperpowers || claudeSuperpowers
       ].filter(Boolean).length,
-      updateCount,
+      outdatedCount,
       overviewText: 'OpenSpec 负责把需求变成可追踪的 proposal/design/tasks；GStack 负责工程、安全、设计和代码审查；Superpowers 负责 TDD、debug、计划和完成前验证等方法论。'
     },
     tools: [
@@ -190,9 +188,7 @@ export async function detectCapabilities() {
         version: {
           current: openspecVersion.current || '未安装',
           latest: openspecVersion.latest || '未获取',
-          updateAvailable: openspecVersion.updateAvailable,
-          updateAction: 'update-openspec',
-          updateHint: '使用 npm 更新全局 @fission-ai/openspec'
+          updateAvailable: openspecVersion.updateAvailable
         },
         aiSupport: [
           hostSupport({
@@ -200,18 +196,14 @@ export async function detectCapabilities() {
             supported: Boolean(openspecVersion.current),
             install: '全局 openspec CLI',
             version: openspecVersion.current || '未安装',
-            updateAction: 'update-openspec',
-            updateAvailable: openspecVersion.updateAvailable,
-            updateHint: 'Codex 调用本机 openspec 命令执行 propose/apply/archive。'
+            updateAvailable: openspecVersion.updateAvailable
           }),
           hostSupport({
             host: 'Claude CLI',
             supported: Boolean(openspecVersion.current),
             install: '全局 openspec CLI',
             version: openspecVersion.current || '未安装',
-            updateAction: 'update-openspec',
-            updateAvailable: openspecVersion.updateAvailable,
-            updateHint: 'Claude CLI 同样依赖本机 openspec 命令。'
+            updateAvailable: openspecVersion.updateAvailable
           })
         ],
         officialSkills: [
@@ -237,8 +229,7 @@ export async function detectCapabilities() {
         version: {
           current: codexGstackVersion.current || claudeGstackVersion.current || '未安装',
           latest: codexGstackVersion.latest || claudeGstackVersion.latest || '未获取',
-          updateAvailable: codexGstackVersion.updateAvailable || claudeGstackVersion.updateAvailable,
-          updateHint: 'Codex 与 Claude 的安装目录不同，更新动作需要按宿主分别执行。'
+          updateAvailable: codexGstackVersion.updateAvailable || claudeGstackVersion.updateAvailable
         },
         aiSupport: [
           hostSupport({
@@ -246,18 +237,14 @@ export async function detectCapabilities() {
             supported: codexGstack,
             install: codexGstack ? '~/.codex/skills/gstack' : '未检测到 Codex GStack skills',
             version: codexGstackVersion.current || '未安装',
-            updateAction: 'update-codex-gstack',
-            updateAvailable: codexGstackVersion.updateAvailable,
-            updateHint: '通过 ~/.gstack/repos/gstack 拉取后执行 setup --host codex。'
+            updateAvailable: codexGstackVersion.updateAvailable
           }),
           hostSupport({
             host: 'Claude CLI',
             supported: claudeGstack,
             install: claudeGstack ? '~/.claude/skills/gstack 或 ~/.gstack/repos/gstack' : '未检测到 Claude/GStack 安装',
             version: claudeGstackVersion.current || '未安装',
-            updateAction: 'update-claude-gstack',
-            updateAvailable: claudeGstackVersion.updateAvailable,
-            updateHint: '通过 Claude 侧安装目录拉取后执行 setup。'
+            updateAvailable: claudeGstackVersion.updateAvailable
           })
         ],
         officialSkills: [
@@ -288,24 +275,21 @@ export async function detectCapabilities() {
         design: 'agentic-workflow 在不同 `/wf-*` 中声明 required 或 conditional skills，执行者需要先加载对应 skill 文档再继续。',
         version: {
           current: codexSuperpowersVersion || '需在宿主插件中查看',
-          latest: '由宿主插件市场检查',
-          updateAvailable: false,
-          updateHint: 'Superpowers 通常由 Codex 或 Claude 的插件系统管理，不伪装成统一一键更新。'
+          latest: '未检测',
+          updateAvailable: false
         },
         aiSupport: [
           hostSupport({
             host: 'Codex App',
             supported: codexSuperpowers,
             install: codexSuperpowers ? '~/.codex/plugins/cache/openai-curated/superpowers' : '未检测到 Codex Superpowers 插件',
-            version: codexSuperpowersVersion || '未安装',
-            updateHint: '在 Codex 插件面板中更新 Superpowers。'
+            version: codexSuperpowersVersion || '未安装'
           }),
           hostSupport({
             host: 'Claude CLI',
             supported: claudeSuperpowers,
             install: claudeSuperpowers ? 'Claude 插件或共享 skill 来源' : '未检测到 Claude Superpowers 安装',
-            version: codexSuperpowersVersion || '需在 Claude 插件中查看',
-            updateHint: '使用 Claude 插件市场或 /plugin install superpowers@claude-plugins-official 更新。'
+            version: codexSuperpowersVersion || '需在 Claude 插件中查看'
           })
         ],
         officialSkills: [

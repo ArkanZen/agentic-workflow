@@ -38,9 +38,9 @@ The system SHALL summarize each discovered project's workflow health from existi
 - **WHEN** a tool capability is displayed
 - **THEN** the dashboard shows how `Codex App` and `Claude CLI` support that tool, including install status, support scope, version, or install path
 
-#### Scenario: Version and update guidance shown
+#### Scenario: Tool version detection only
 - **WHEN** a capability supports version detection
-- **THEN** the dashboard shows current version, latest version or marketplace check guidance, and a host-appropriate update action or manual update instruction
+- **THEN** the dashboard shows detected current version and latest version when available without showing update commands, update buttons, or manual update instructions
 
 #### Scenario: Workflow capability definitions are visible
 - **WHEN** a workflow capability is displayed
@@ -72,6 +72,10 @@ The system SHALL allow only predefined workflow maintenance actions against disc
 - **WHEN** the user confirms workflow update for a project
 - **THEN** the system runs the repository `install.sh` with `--upgrade`, `--no-interactive`, the selected project path, and the project's current tier
 
+#### Scenario: Install action uses install script
+- **WHEN** the user confirms workflow installation for a local project directory
+- **THEN** the system runs the repository `install.sh` with `--no-interactive`, the selected project path, and the requested tier
+
 #### Scenario: Switch tier action uses install script
 - **WHEN** the user confirms a workflow tier switch
 - **THEN** the system runs the repository `install.sh` with `--switch`, `--no-interactive`, the selected project path, and the requested tier
@@ -80,9 +84,9 @@ The system SHALL allow only predefined workflow maintenance actions against disc
 - **WHEN** the user confirms adding workflow documents to `.gitignore`
 - **THEN** the system writes an idempotent controlled block for workflow document and host configuration paths into the selected project's `.gitignore`
 
-#### Scenario: Tool update action uses host-specific command
-- **WHEN** the user confirms a supported tool update
-- **THEN** the system runs only the predefined update command for that tool and host
+#### Scenario: Install target must stay inside scan roots
+- **WHEN** an install request targets a directory outside the configured scan roots
+- **THEN** the API rejects the request and does not execute the install script
 
 #### Scenario: Arbitrary shell input rejected
 - **WHEN** a request attempts to run an action outside the predefined maintenance actions

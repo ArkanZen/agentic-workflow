@@ -2,6 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { buildWorkflowAction, buildWorkflowGitignoreContent } from './actions.js';
 
 describe('workflow actions', () => {
+  it('构造安装命令并保留白名单参数', () => {
+    const action = buildWorkflowAction({
+      action: 'install',
+      projectPath: '/tmp/project',
+      tier: 'vibe'
+    });
+
+    expect(action.command).toBe('bash');
+    expect(action.args).toContain('--no-interactive');
+    expect(action.args).toContain('--target');
+    expect(action.args).toContain('/tmp/project');
+    expect(action.args).not.toContain('--upgrade');
+    expect(action.args).not.toContain('--switch');
+  });
+
   it('构造升级命令并保留白名单参数', () => {
     const action = buildWorkflowAction({
       action: 'upgrade',
@@ -41,18 +56,11 @@ describe('workflow actions', () => {
     expect(action.args).toContain('/tmp/project/.gitignore');
   });
 
-  it('构造工具更新动作', () => {
-    const openspec = buildWorkflowAction({
+  it('拒绝工具更新动作', () => {
+    expect(() => buildWorkflowAction({
       action: 'update-openspec',
       projectPath: '/tmp/project'
-    });
-    const codexGstack = buildWorkflowAction({
-      action: 'update-codex-gstack',
-      projectPath: '/tmp/project'
-    });
-
-    expect(openspec.args).toEqual(['install', '-g', '@fission-ai/openspec@latest']);
-    expect(codexGstack.summary).toContain('Codex App');
+    })).toThrow('不支持的维护动作');
   });
 
   it('幂等写入工作流文档忽略块', () => {

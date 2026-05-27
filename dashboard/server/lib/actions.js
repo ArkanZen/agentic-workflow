@@ -79,6 +79,18 @@ export function buildWorkflowAction(input) {
   const installScript = path.join(WORKFLOW_ROOT, 'install.sh');
   const tier = input.tier;
 
+  if (input.action === 'install') {
+    if (!ALLOWED_TIERS.has(tier)) {
+      throw new Error('安装动作需要有效档位');
+    }
+    return {
+      command: 'bash',
+      args: [installScript, '--type', tier, '--target', input.projectPath, '--no-interactive'],
+      cwd: WORKFLOW_ROOT,
+      summary: `为 ${input.projectPath} 安装 ${tier} 工作流`
+    };
+  }
+
   if (input.action === 'upgrade') {
     if (!ALLOWED_TIERS.has(tier)) {
       throw new Error('升级动作需要有效档位');
@@ -110,35 +122,6 @@ export function buildWorkflowAction(input) {
       args: [path.join(input.projectPath, '.gitignore')],
       cwd: input.projectPath,
       summary: `将 agentic-workflow 文档与宿主配置加入 ${input.projectPath}/.gitignore`
-    };
-  }
-
-  if (input.action === 'update-openspec') {
-    return {
-      command: 'npm',
-      args: ['install', '-g', '@fission-ai/openspec@latest'],
-      cwd: WORKFLOW_ROOT,
-      summary: '更新 OpenSpec CLI 到 npm 最新版本'
-    };
-  }
-
-  if (input.action === 'update-codex-gstack') {
-    const gstackRoot = path.join(process.env.HOME, '.gstack/repos/gstack');
-    return {
-      command: 'bash',
-      args: ['-lc', `git -C "${gstackRoot}" pull --ff-only && cd "${gstackRoot}" && ./setup --host codex`],
-      cwd: WORKFLOW_ROOT,
-      summary: '更新 Codex App 侧 GStack 并重新执行 setup --host codex'
-    };
-  }
-
-  if (input.action === 'update-claude-gstack') {
-    const gstackRoot = path.join(process.env.HOME, '.claude/skills/gstack');
-    return {
-      command: 'bash',
-      args: ['-lc', `git -C "${gstackRoot}" pull --ff-only && cd "${gstackRoot}" && ./setup`],
-      cwd: WORKFLOW_ROOT,
-      summary: '更新 Claude CLI 侧 GStack 并重新执行 setup'
     };
   }
 

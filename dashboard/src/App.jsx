@@ -148,10 +148,10 @@ function SkillList({ title, items, emptyText }) {
 
 /**
  * 工具能力面板组件。
- * @param {{capabilities: object, onActionPreview: (action: string) => void}} props 组件属性。
+ * @param {{capabilities: object}} props 组件属性。
  * @returns {JSX.Element} 能力面板。
  */
-function CapabilityPanel({ capabilities, onActionPreview }) {
+function CapabilityPanel({ capabilities }) {
   const tools = capabilities?.tools ?? [];
   const summary = capabilities?.summary;
   const [activeTool, setActiveTool] = useState(tools[0]?.id ?? 'openspec');
@@ -174,7 +174,7 @@ function CapabilityPanel({ capabilities, onActionPreview }) {
           <h2>工具能力</h2>
           <p>按工具维度解释 OpenSpec、GStack、Superpowers，同时展示用途、宿主支持和工作流引用关系。</p>
         </div>
-        {summary && <Badge label={`${summary.readyTools}/${summary.totalTools} 工具可用`} tone={summary.updateCount > 0 ? 'warn' : 'pass'} />}
+        {summary && <Badge label={`${summary.readyTools}/${summary.totalTools} 工具可用`} tone={summary.outdatedCount > 0 ? 'warn' : 'pass'} />}
       </div>
       {summary && <p className="overview-note">{summary.overviewText}</p>}
       <div className="tool-tabs">
@@ -219,12 +219,7 @@ function CapabilityPanel({ capabilities, onActionPreview }) {
             </div>
             <div>
               <span>版本：{support.version}</span>
-              <p>{support.updateHint}</p>
-            </div>
-            <div>
-              {support.updateAction && support.updateAvailable ? (
-                <button onClick={() => onActionPreview(support.updateAction)}>预览更新</button>
-              ) : <span className="quiet">{support.updateAction ? '无需更新' : '宿主管理'}</span>}
+              <p>{support.updateAvailable ? '检测到落后版本' : '版本状态正常'}</p>
             </div>
           </div>
         ))}
@@ -375,7 +370,9 @@ function SettingsPanel({
   rootsInput,
   setRootsInput,
   onRefresh,
-  loading
+  loading,
+  installTarget,
+  setInstallTarget
 }) {
   return (
     <>
@@ -389,6 +386,23 @@ function SettingsPanel({
         <button className="scan scan-inline" onClick={onRefresh} disabled={loading}>
           {loading ? '扫描中...' : '按这些目录扫描'}
         </button>
+      </section>
+      <section className="panel">
+        <h2>安装工作流</h2>
+        <p className="overview-note">给扫描目录内的本地项目安装 agentic-workflow。目标目录必须已存在，并且位于上面的扫描目录内。</p>
+        <div className="install-grid">
+          <label className="field">
+            <span>目标项目目录</span>
+            <input value={installTarget} onChange={(event) => setInstallTarget(event.target.value)} placeholder="/path/to/local/project" />
+          </label>
+          <label className="field">
+            <span>workflow tier（工作流档位）</span>
+            <select value={actionTier} onChange={(event) => setActionTier(event.target.value)}>
+              {TIERS.map((tier) => <option key={tier} value={tier}>{tier}</option>)}
+            </select>
+          </label>
+          <button disabled={running || !installTarget.trim()} onClick={() => onPreview('install', installTarget.trim())}>预览 install（安装）</button>
+        </div>
       </section>
       <section className="panel">
         <h2>workflow actions（工作流维护）</h2>
@@ -433,12 +447,14 @@ function ProjectDetail({
   const [actionPreview, setActionPreview] = useState(null);
   const [doctorTab, setDoctorTab] = useState('fail');
   const [activeSection, setActiveSection] = useState('overview');
+  const [installTarget, setInstallTarget] = useState(project?.path ?? '');
 
   useEffect(() => {
     setActionTier(project?.tier ?? 'vibe');
     setActionLog('');
     setActionPreview(null);
     setDoctorTab('fail');
+    setInstallTarget(project?.path ?? '');
   }, [project]);
 
   if (!project) {
@@ -473,19 +489,20 @@ function ProjectDetail({
   /**
    * 预览维护动作，供用户确认影响范围。
    * @param {string} action 动作名称。
+   * @param {string} targetPath 可选目标项目路径。
    * @returns {Promise<void>}
    */
-  async function handlePreview(action) {
+  async function handlePreview(action, targetPath = project.path) {
     setRunning(true);
     setActionLog('');
     try {
       const preview = await previewAction({
         action,
-        projectPath: project.path,
+        projectPath: targetPath,
         tier: actionTier,
         roots
       });
-      setActionPreview({ ...preview, action });
+      setActionPreview({ ...preview, action, projectPath: targetPath });
       setActiveSection('settings');
     } catch (error) {
       setActionLog(error.message);
@@ -506,7 +523,7 @@ function ProjectDetail({
     try {
       const result = await runAction({
         action: actionPreview.action,
-        projectPath: project.path,
+        projectPath: actionPreview.projectPath ?? project.path,
         tier: actionTier,
         roots
       });
@@ -537,7 +554,7 @@ function ProjectDetail({
         ))}
       </nav>
       {activeSection === 'overview' && <OverviewPanel project={project} />}
-      {activeSection === 'tools' && <CapabilityPanel capabilities={project.capabilities} onActionPreview={handlePreview} />}
+      {activeSection === 'tools' && <CapabilityPanel capabilities={project.capabilities} />}
       {activeSection === 'workflows' && <WorkflowPanel />}
       {activeSection === 'health' && (
         <HealthPanel
@@ -561,6 +578,8 @@ function ProjectDetail({
           setRootsInput={setRootsInput}
           onRefresh={onRefresh}
           loading={loading}
+          installTarget={installTarget}
+          setInstallTarget={setInstallTarget}
         />
       )}
     </section>

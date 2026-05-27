@@ -24,12 +24,17 @@ describe('detectCapabilities', () => {
     expect(definedItems).toContain('superpowers:writing-plans');
   });
 
-  it('返回版本和更新信息', async () => {
+  it('仅返回版本检测信息，不提供更新动作', async () => {
     const result = await detectCapabilities();
     const openspec = result.tools.find((tool) => tool.id === 'openspec');
+    const allSupports = result.tools.flatMap((tool) => tool.aiSupport);
 
     expect(result.summary.totalTools).toBe(3);
     expect(result.tools.every((tool) => tool.version)).toBe(true);
-    expect(openspec.version.updateAction).toBe('update-openspec');
+    expect(openspec.version.current).toBeTruthy();
+    expect(openspec.version.updateAction).toBeUndefined();
+    expect(openspec.version.updateHint).toBeUndefined();
+    expect(allSupports.every((support) => support.updateAction === undefined)).toBe(true);
+    expect(allSupports.every((support) => support.updateHint === undefined)).toBe(true);
   });
 });

@@ -243,11 +243,13 @@ else
 fi
 
 step "杂项"
-ds_count="$(find "$target_dir" "$script_dir/templates" -name .DS_Store -type f 2>/dev/null | sort -u | wc -l | tr -d ' ')"
+ds_files="$(find "$target_dir" "$script_dir/templates" -name .DS_Store -type f 2>/dev/null | sort -u)"
+ds_count="$(printf '%s\n' "$ds_files" | sed '/^$/d' | wc -l | tr -d ' ')"
 if [[ "$ds_count" == "0" ]]; then
   ok "未发现 .DS_Store"
 else
-  warn "发现 $ds_count 个 .DS_Store，建议清理后再发布模板"
+  info "发现 $ds_count 个 .DS_Store，已按本地系统文件忽略"
+  printf '%s\n' "$ds_files" | sed '/^$/d' | sed 's/^/    - /'
 fi
 
 step "摘要"

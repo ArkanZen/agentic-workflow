@@ -5,3 +5,10 @@
 docs/
 openspec/specs/
 openspec/changes/
+
+# 本地 Dashboard 依赖与构建产物
+dashboard/node_modules/
+dashboard/dist/
+
+# 浏览器验证临时产物
+.playwright-mcp/

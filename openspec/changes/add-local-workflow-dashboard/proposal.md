@@ -24,3 +24,10 @@ agentic-workflow 已经能安装、升级和校验项目工作流，但多项目
 - 影响新增 `dashboard/` 本地 Web UI 与 API 代码。
 - 复用现有 `install.sh`、`validate-workflow.sh`、`.agentic-workflow/manifest.json` 和 `openspec/config.yaml`。
 - 可能新增 Node 前端依赖和本地开发脚本，不改变既有安装脚本行为。
+
+## GStack Gate
+
+- 状态：通过
+- 审查命令：/gstack-plan-eng-review
+- 阻断项：无
+- 审查摘要：扫描目录改为用户配置、详情页菜单化、工具能力按 OpenSpec/GStack/Superpowers 维度展示，仍不新增任意 shell 能力；主要风险是信息结构复杂导致新手理解成本上升，需用折叠说明、支持矩阵和清晰中文副标题控制。

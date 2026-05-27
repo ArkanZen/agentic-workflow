@@ -20,6 +20,9 @@
 - [x] 3.6 展示工作流定义了哪些 OpenSpec/GStack/Superpowers 命令或 skill，以及哪些能力未定义，覆盖 Project health summary。
 - [x] 3.7 增加工具版本检测、更新提示和宿主差异化更新动作，覆盖 Project health summary 与 Controlled workflow actions。
 - [x] 3.8 优化工具能力排版，增加新手摘要和可折叠工作流说明，覆盖 Geek style dashboard UI。
+- [x] 3.9 将项目详情改为菜单式功能区，避免总览、工具、工作流、健康检查和设置堆在一个页面，覆盖 Geek style dashboard UI。
+- [x] 3.10 将工具能力页改为 OpenSpec、GStack、Superpowers 工具维度 tab，展示 AI 支持矩阵、官方技能、工作流已用技能和未用技能，覆盖 Project health summary。
+- [x] 3.11 增加用户自定义扫描目录管理，避免开源工具写死个人 workspace 路径，覆盖 Project discovery。
 
 ## 4. 验证与文档
 

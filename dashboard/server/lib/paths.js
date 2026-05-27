@@ -5,11 +5,9 @@ import path from 'node:path';
 // 工作流仓库根目录，用于定位 install.sh 与 validate-workflow.sh。
 export const WORKFLOW_ROOT = path.resolve(process.cwd(), '..');
 
-// 默认扫描根目录，覆盖常见本地工作区和当前仓库父目录。
+// 默认扫描根目录只包含工作流仓库本身，避免开源工具绑定个人目录。
 export const DEFAULT_SCAN_ROOTS = [
-  path.join(os.homedir(), 'aiworkspace'),
-  path.join(os.homedir(), 'workspace'),
-  path.dirname(WORKFLOW_ROOT)
+  WORKFLOW_ROOT
 ];
 
 /**

@@ -4,7 +4,19 @@ import { fetchProjects, previewAction, runAction, runDoctor } from './api.js';
 // 工作流档位选项，用于切换档位动作。
 const TIERS = ['backend', 'python-data', 'frontend', 'fullstack', 'vibe'];
 
-// 工作流说明用于给新用户理解每个 /wf-* 的定位，默认折叠展示。
+// 本地扫描目录缓存键，仅保存在浏览器本地，不写入项目文件。
+const ROOTS_STORAGE_KEY = 'agentic-workflow-dashboard.roots';
+
+// 详情页菜单定义，避免把所有内容堆在一个页面。
+const SECTIONS = [
+  { id: 'overview', label: '总览' },
+  { id: 'tools', label: '工具能力' },
+  { id: 'workflows', label: '工作流' },
+  { id: 'health', label: '健康检查' },
+  { id: 'settings', label: '设置' }
+];
+
+// 工作流说明用于解释每个 /wf-* 的定位，默认折叠展示。
 const WORKFLOW_GUIDES = [
   {
     name: '/wf-quick',
@@ -111,91 +123,117 @@ function ProjectRow({ project, selected, onSelect }) {
 }
 
 /**
+ * 技能列表组件。
+ * @param {{title: string, items: object[], emptyText: string}} props 组件属性。
+ * @returns {JSX.Element} 技能列表。
+ */
+function SkillList({ title, items, emptyText }) {
+  return (
+    <div className="skill-box">
+      <h3>{title}</h3>
+      {items.length === 0 ? (
+        <p className="quiet">{emptyText}</p>
+      ) : items.map((item) => (
+        <details className="skill-item" key={`${title}-${item.name}`}>
+          <summary>
+            <strong>{item.name}</strong>
+            {item.workflows?.length > 0 && <span>{item.workflows.join(' / ')}</span>}
+          </summary>
+          <p>{item.purpose}</p>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+/**
  * 工具能力面板组件。
- * @param {{capabilities: object}} props 组件属性。
+ * @param {{capabilities: object, onActionPreview: (action: string) => void}} props 组件属性。
  * @returns {JSX.Element} 能力面板。
  */
 function CapabilityPanel({ capabilities, onActionPreview }) {
-  const groups = capabilities?.groups ?? [];
+  const tools = capabilities?.tools ?? [];
   const summary = capabilities?.summary;
+  const [activeTool, setActiveTool] = useState(tools[0]?.id ?? 'openspec');
+  const tool = tools.find((item) => item.id === activeTool) ?? tools[0];
+
+  useEffect(() => {
+    if (tools.length > 0 && !tools.some((item) => item.id === activeTool)) {
+      setActiveTool(tools[0].id);
+    }
+  }, [activeTool, tools]);
+
+  if (!tool) {
+    return <section className="panel"><h2>工具能力</h2><p className="quiet">尚未检测到工具能力数据</p></section>;
+  }
+
   return (
     <section className="panel">
       <div className="panel-title-row">
         <div>
           <h2>工具能力</h2>
-          <p>给新用户看的版本：这些工具分别负责记录需求、做审查、补方法论。</p>
+          <p>按工具维度解释 OpenSpec、GStack、Superpowers，同时展示用途、宿主支持和工作流引用关系。</p>
         </div>
-        {summary && <Badge label={`${summary.availableCapabilities}/${summary.totalCapabilities} 可用`} tone={summary.updateCount > 0 ? 'warn' : 'pass'} />}
+        {summary && <Badge label={`${summary.readyTools}/${summary.totalTools} 工具可用`} tone={summary.updateCount > 0 ? 'warn' : 'pass'} />}
       </div>
-      {summary && <p className="beginner-note">{summary.beginnerText}</p>}
-      <div className="capability-groups">
-        {groups.map((group) => (
-          <details className="capability-group" key={group.id} open={group.id !== 'claude'}>
-            <summary className="capability-group-head">
-              <h3>{group.title}</h3>
-              <p>{group.subtitle}</p>
-            </summary>
-            <div className="capability-list">
-              {group.capabilities.map((capability) => (
-                <div className="capability-row" key={capability.id}>
-                  <div className="capability-main">
-                    <div className="capability-title">{capability.title}</div>
-                    <p>{capability.subtitle}</p>
-                  </div>
-                  <div className="capability-status-block">
-                    <span className={`state-dot ${capability.available ? 'state-dot-ok' : 'state-dot-missing'}`} />
-                    <span className={`state-text ${capability.available ? 'state-ok' : 'state-missing'}`}>
-                      {booleanLabel(capability.available)}
-                    </span>
-                  </div>
-                  <div className="version-stack">
-                    <span>当前：{capability.version.current}</span>
-                    <span>最新：{capability.version.latest}</span>
-                    <span>{capability.detail}</span>
-                  </div>
-                  <div className="usage">
-                    <strong>{capability.definedInWorkflow ? '工作流已定义' : '工作流未定义'}</strong>
-                    {capability.definedItems.length > 0 && (
-                      <details className="inline-details">
-                        <summary>查看定义项</summary>
-                        <ul>
-                          {capability.definedItems.map((item) => <li key={item}>{item}</li>)}
-                        </ul>
-                      </details>
-                    )}
-                  </div>
-                  <div className="update-cell">
-                    {capability.version.updateMode === 'command' && capability.version.updateAvailable && (
-                      <button onClick={() => onActionPreview(capability.version.updateAction)}>预览更新</button>
-                    )}
-                    {capability.version.updateMode === 'command' && !capability.version.updateAvailable && (
-                      <span className="quiet">无需更新</span>
-                    )}
-                    {capability.version.updateMode === 'manual' && (
-                      <details className="inline-details">
-                        <summary>更新方式</summary>
-                        <p>{capability.version.updateHint}</p>
-                      </details>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </details>
+      {summary && <p className="overview-note">{summary.overviewText}</p>}
+      <div className="tool-tabs">
+        {tools.map((item) => (
+          <button className={item.id === tool.id ? 'active' : ''} key={item.id} onClick={() => setActiveTool(item.id)}>
+            {item.title}
+          </button>
         ))}
       </div>
-      <details className="workflow-guide">
-        <summary>查看各工作流说明</summary>
-        <div className="workflow-guide-list">
-          {WORKFLOW_GUIDES.map((workflow) => (
-            <div className="workflow-guide-item" key={workflow.name}>
-              <strong>{workflow.name}</strong>
-              <p><span>官方说明：</span>{workflow.official}</p>
-              <p><span>项目说明：</span>{workflow.project}</p>
-            </div>
-          ))}
+      <div className="tool-hero">
+        <div>
+          <p className="eyebrow">当前工具</p>
+          <h3>{tool.title}</h3>
+          <p>{tool.subtitle}</p>
         </div>
-      </details>
+        <div className="version-card">
+          <span>当前版本：{tool.version.current}</span>
+          <span>最新版本：{tool.version.latest}</span>
+          <Badge label={tool.version.updateAvailable ? '可更新' : '已就绪'} tone={tool.version.updateAvailable ? 'warn' : 'pass'} />
+        </div>
+      </div>
+      <div className="explain-grid">
+        <div>
+          <h3>用途说明</h3>
+          <p>{tool.purpose}</p>
+        </div>
+        <div>
+          <h3>设计细节</h3>
+          <p>{tool.design}</p>
+        </div>
+      </div>
+      <div className="support-matrix">
+        {tool.aiSupport.map((support) => (
+          <div className="support-row" key={`${tool.id}-${support.host}`}>
+            <div>
+              <strong>{support.host}</strong>
+              <p>{support.install}</p>
+            </div>
+            <div>
+              <span className={`state-dot ${support.supported ? 'state-dot-ok' : 'state-dot-missing'}`} />
+              <span className={`state-text ${support.supported ? 'state-ok' : 'state-missing'}`}>{support.status}</span>
+            </div>
+            <div>
+              <span>版本：{support.version}</span>
+              <p>{support.updateHint}</p>
+            </div>
+            <div>
+              {support.updateAction && support.updateAvailable ? (
+                <button onClick={() => onActionPreview(support.updateAction)}>预览更新</button>
+              ) : <span className="quiet">{support.updateAction ? '无需更新' : '宿主管理'}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="skill-columns">
+        <SkillList title="官方定义的技能" items={tool.officialSkills} emptyText="暂无官方技能数据" />
+        <SkillList title="工作流中用到的技能" items={tool.workflowSkills} emptyText="当前工作流未使用" />
+        <SkillList title="未用到但可扩展" items={tool.unusedSkills} emptyText="当前工具已全部覆盖" />
+      </div>
     </section>
   );
 }
@@ -236,16 +274,165 @@ function DoctorResult({ doctor, activeTab }) {
 }
 
 /**
+ * 项目总览面板。
+ * @param {{project: object}} props 组件属性。
+ * @returns {JSX.Element} 总览内容。
+ */
+function OverviewPanel({ project }) {
+  return (
+    <>
+      <div className="metrics">
+        <div><span>workflow tier（工作流档位）</span><strong>{project.tier}</strong></div>
+        <div><span>模板版本</span><strong>{project.workflowVersion}</strong></div>
+        <div><span>OpenSpec active（活跃变更）</span><strong>{project.openspec?.activeCount ?? 0}</strong></div>
+        <div><span>任务进度</span><strong>{project.openspec?.completedTasks ?? 0}/{project.openspec?.totalTasks ?? 0}</strong></div>
+      </div>
+      <section className="panel">
+        <h2>项目状态</h2>
+        <div className="summary-grid">
+          <div><span>安装状态</span><strong>{project.installed ? '已安装' : '部分配置'}</strong></div>
+          <div><span>Codex App</span><strong>{booleanLabel(project.hosts?.codex)}</strong></div>
+          <div><span>Claude CLI</span><strong>{booleanLabel(project.hosts?.claude)}</strong></div>
+          <div><span>doctor（健康检查）</span><strong>{healthLabel(project.doctor)}</strong></div>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/**
+ * 工作流说明面板。
+ * @returns {JSX.Element} 工作流内容。
+ */
+function WorkflowPanel() {
+  return (
+    <section className="panel">
+      <div className="panel-title-row">
+        <div>
+          <h2>工作流定义</h2>
+          <p>默认折叠长说明，展开后分别看官方定位和本项目怎么使用。</p>
+        </div>
+      </div>
+      <div className="workflow-guide-list">
+        {WORKFLOW_GUIDES.map((workflow) => (
+          <details className="workflow-guide-item" key={workflow.name}>
+            <summary><strong>{workflow.name}</strong></summary>
+            <p><span>官方说明：</span>{workflow.official}</p>
+            <p><span>项目说明：</span>{workflow.project}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * 健康检查面板。
+ * @param {{project: object, doctorTab: string, setDoctorTab: (tab: string) => void, running: boolean, onDoctor: () => void}} props 组件属性。
+ * @returns {JSX.Element} 健康检查内容。
+ */
+function HealthPanel({ project, doctorTab, setDoctorTab, running, onDoctor }) {
+  return (
+    <section className="panel">
+      <h2>doctor（健康检查）</h2>
+      <div className="actions">
+        <button onClick={onDoctor} disabled={running}>{running ? '检查中' : '运行 doctor（健康检查）'}</button>
+      </div>
+      {project.doctor && (
+        <div className="doctor-tabs">
+          <button className={doctorTab === 'fail' ? 'active' : ''} onClick={() => setDoctorTab('fail')}>
+            失败 <span>{project.doctor.failCount}</span>
+          </button>
+          <button className={doctorTab === 'warn' ? 'active' : ''} onClick={() => setDoctorTab('warn')}>
+            警告 <span>{project.doctor.warnCount}</span>
+          </button>
+          <button className={doctorTab === 'pass' ? 'active' : ''} onClick={() => setDoctorTab('pass')}>
+            通过 <span>{project.doctor.passCount}</span>
+          </button>
+          <button className={doctorTab === 'raw' ? 'active' : ''} onClick={() => setDoctorTab('raw')}>
+            原始日志
+          </button>
+        </div>
+      )}
+      <DoctorResult doctor={project.doctor} activeTab={doctorTab} />
+    </section>
+  );
+}
+
+/**
+ * 设置与维护面板。
+ * @param {object} props 组件属性。
+ * @returns {JSX.Element} 设置内容。
+ */
+function SettingsPanel({
+  actionTier,
+  setActionTier,
+  running,
+  onPreview,
+  actionPreview,
+  onRunAction,
+  actionLog,
+  rootsInput,
+  setRootsInput,
+  onRefresh,
+  loading
+}) {
+  return (
+    <>
+      <section className="panel">
+        <h2>扫描目录</h2>
+        <p className="overview-note">这是开源工具，不假设你的项目放在哪里。每行一个目录，保存于浏览器本地，点击扫描后生效。</p>
+        <label className="roots roots-wide">
+          <span>自定义扫描目录</span>
+          <textarea value={rootsInput} onChange={(event) => setRootsInput(event.target.value)} />
+        </label>
+        <button className="scan scan-inline" onClick={onRefresh} disabled={loading}>
+          {loading ? '扫描中...' : '按这些目录扫描'}
+        </button>
+      </section>
+      <section className="panel">
+        <h2>workflow actions（工作流维护）</h2>
+        <div className="action-grid">
+          <select value={actionTier} onChange={(event) => setActionTier(event.target.value)}>
+            {TIERS.map((tier) => <option key={tier} value={tier}>{tier}</option>)}
+          </select>
+          <button disabled={running} onClick={() => onPreview('upgrade')}>预览 upgrade（升级）</button>
+          <button disabled={running} onClick={() => onPreview('switch-tier')}>预览 switch tier（切档）</button>
+          <button disabled={running} onClick={() => onPreview('ignore-workflow-docs')}>预览 gitignore（忽略工作流文档）</button>
+        </div>
+        {actionPreview && (
+          <div className="confirm">
+            <p>{actionPreview.summary}</p>
+            <code>{actionPreview.command}</code>
+            <button disabled={running} onClick={onRunAction}>确认执行 command（命令）</button>
+          </div>
+        )}
+        {actionLog && <pre>{actionLog}</pre>}
+      </section>
+    </>
+  );
+}
+
+/**
  * 项目详情组件。
- * @param {{project: object | null, roots: string[], onDoctor: (result: object) => void}} props 组件属性。
+ * @param {object} props 组件属性。
  * @returns {JSX.Element} 项目详情。
  */
-function ProjectDetail({ project, roots, onDoctor }) {
+function ProjectDetail({
+  project,
+  roots,
+  onDoctor,
+  rootsInput,
+  setRootsInput,
+  onRefresh,
+  loading
+}) {
   const [running, setRunning] = useState(false);
   const [actionTier, setActionTier] = useState(project?.tier ?? 'vibe');
   const [actionLog, setActionLog] = useState('');
   const [actionPreview, setActionPreview] = useState(null);
   const [doctorTab, setDoctorTab] = useState('fail');
+  const [activeSection, setActiveSection] = useState('overview');
 
   useEffect(() => {
     setActionTier(project?.tier ?? 'vibe');
@@ -275,6 +462,7 @@ function ProjectDetail({ project, roots, onDoctor }) {
       } else {
         setDoctorTab('pass');
       }
+      setActiveSection('health');
     } catch (error) {
       setActionLog(error.message);
     } finally {
@@ -298,6 +486,7 @@ function ProjectDetail({ project, roots, onDoctor }) {
         roots
       });
       setActionPreview({ ...preview, action });
+      setActiveSection('settings');
     } catch (error) {
       setActionLog(error.message);
     } finally {
@@ -340,61 +529,50 @@ function ProjectDetail({ project, roots, onDoctor }) {
         </div>
         <Badge label={project.installed ? '已安装' : '部分配置'} tone={project.installed ? 'pass' : 'warn'} />
       </div>
-
-      <div className="metrics">
-        <div><span>workflow tier（工作流档位）</span><strong>{project.tier}</strong></div>
-        <div><span>模板版本</span><strong>{project.workflowVersion}</strong></div>
-        <div><span>OpenSpec active（活跃变更）</span><strong>{project.openspec?.activeCount ?? 0}</strong></div>
-        <div><span>任务进度</span><strong>{project.openspec?.completedTasks ?? 0}/{project.openspec?.totalTasks ?? 0}</strong></div>
-      </div>
-
-      <CapabilityPanel capabilities={project.capabilities} onActionPreview={handlePreview} />
-
-      <section className="panel">
-        <h2>doctor（健康检查）</h2>
-        <div className="actions">
-          <button onClick={handleDoctor} disabled={running}>{running ? '检查中' : '运行 doctor（健康检查）'}</button>
-        </div>
-        {project.doctor && (
-          <div className="doctor-tabs">
-            <button className={doctorTab === 'fail' ? 'active' : ''} onClick={() => setDoctorTab('fail')}>
-              失败 <span>{project.doctor.failCount}</span>
-            </button>
-            <button className={doctorTab === 'warn' ? 'active' : ''} onClick={() => setDoctorTab('warn')}>
-              警告 <span>{project.doctor.warnCount}</span>
-            </button>
-            <button className={doctorTab === 'pass' ? 'active' : ''} onClick={() => setDoctorTab('pass')}>
-              通过 <span>{project.doctor.passCount}</span>
-            </button>
-            <button className={doctorTab === 'raw' ? 'active' : ''} onClick={() => setDoctorTab('raw')}>
-              原始日志
-            </button>
-          </div>
-        )}
-        <DoctorResult doctor={project.doctor} activeTab={doctorTab} />
-      </section>
-
-      <section className="panel">
-        <h2>workflow actions（工作流维护）</h2>
-        <div className="action-grid">
-          <select value={actionTier} onChange={(event) => setActionTier(event.target.value)}>
-            {TIERS.map((tier) => <option key={tier} value={tier}>{tier}</option>)}
-          </select>
-          <button disabled={running} onClick={() => handlePreview('upgrade')}>预览 upgrade（升级）</button>
-          <button disabled={running} onClick={() => handlePreview('switch-tier')}>预览 switch tier（切档）</button>
-          <button disabled={running} onClick={() => handlePreview('ignore-workflow-docs')}>预览 gitignore（忽略工作流文档）</button>
-        </div>
-        {actionPreview && (
-          <div className="confirm">
-            <p>{actionPreview.summary}</p>
-            <code>{actionPreview.command}</code>
-            <button disabled={running} onClick={handleRunAction}>确认执行 command（命令）</button>
-          </div>
-        )}
-        {actionLog && <pre>{actionLog}</pre>}
-      </section>
+      <nav className="section-menu">
+        {SECTIONS.map((section) => (
+          <button className={activeSection === section.id ? 'active' : ''} key={section.id} onClick={() => setActiveSection(section.id)}>
+            {section.label}
+          </button>
+        ))}
+      </nav>
+      {activeSection === 'overview' && <OverviewPanel project={project} />}
+      {activeSection === 'tools' && <CapabilityPanel capabilities={project.capabilities} onActionPreview={handlePreview} />}
+      {activeSection === 'workflows' && <WorkflowPanel />}
+      {activeSection === 'health' && (
+        <HealthPanel
+          project={project}
+          doctorTab={doctorTab}
+          setDoctorTab={setDoctorTab}
+          running={running}
+          onDoctor={handleDoctor}
+        />
+      )}
+      {activeSection === 'settings' && (
+        <SettingsPanel
+          actionTier={actionTier}
+          setActionTier={setActionTier}
+          running={running}
+          onPreview={handlePreview}
+          actionPreview={actionPreview}
+          onRunAction={handleRunAction}
+          actionLog={actionLog}
+          rootsInput={rootsInput}
+          setRootsInput={setRootsInput}
+          onRefresh={onRefresh}
+          loading={loading}
+        />
+      )}
     </section>
   );
+}
+
+/**
+ * 从浏览器本地缓存读取扫描目录。
+ * @returns {string} 扫描目录文本。
+ */
+function readStoredRoots() {
+  return window.localStorage.getItem(ROOTS_STORAGE_KEY) ?? '';
 }
 
 /**
@@ -402,7 +580,7 @@ function ProjectDetail({ project, roots, onDoctor }) {
  * @returns {JSX.Element} 应用根节点。
  */
 export function App() {
-  const [rootsInput, setRootsInput] = useState('');
+  const [rootsInput, setRootsInput] = useState(() => readStoredRoots());
   const [roots, setRoots] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedPath, setSelectedPath] = useState('');
@@ -433,6 +611,7 @@ export function App() {
       if (!rootsInput) {
         setRootsInput(result.roots.join('\n'));
       }
+      window.localStorage.setItem(ROOTS_STORAGE_KEY, (nextRoots.length ? nextRoots : result.roots).join('\n'));
     } catch (scanError) {
       setError(scanError.message);
     } finally {
@@ -465,16 +644,12 @@ export function App() {
             <h1>agentic workflow</h1>
           </div>
         </div>
-
-        <label className="roots">
+        <div className="scan-summary">
           <span>扫描目录</span>
-          <textarea value={rootsInput} onChange={(event) => setRootsInput(event.target.value)} />
-        </label>
-        <button className="scan" onClick={refreshProjects} disabled={loading}>
-          {loading ? '扫描中...' : '开始扫描'}
-        </button>
+          <strong>{roots.length}</strong>
+          <button onClick={refreshProjects} disabled={loading}>{loading ? '扫描中' : '刷新'}</button>
+        </div>
         {error && <p className="error">{error}</p>}
-
         <div className="project-list">
           {projects.map((project) => (
             <ProjectRow
@@ -487,7 +662,15 @@ export function App() {
         </div>
       </aside>
 
-      <ProjectDetail project={selectedProject} roots={roots} onDoctor={updateDoctor} />
+      <ProjectDetail
+        project={selectedProject}
+        roots={roots}
+        onDoctor={updateDoctor}
+        rootsInput={rootsInput}
+        setRootsInput={setRootsInput}
+        onRefresh={refreshProjects}
+        loading={loading}
+      />
     </main>
   );
 }

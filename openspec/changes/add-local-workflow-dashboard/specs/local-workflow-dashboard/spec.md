@@ -15,6 +15,10 @@ The system SHALL discover local projects that have agentic-workflow installed or
 - **WHEN** a project exists outside the configured scan roots
 - **THEN** the dashboard does not scan or display that project
 
+#### Scenario: Scan roots configurable by user
+- **WHEN** the user adds or removes a scan root in the dashboard
+- **THEN** the next scan uses the user-configured roots instead of a hardcoded local workspace path
+
 ### Requirement: Project health summary
 The system SHALL summarize each discovered project's workflow health from existing files and validation commands.
 
@@ -22,13 +26,17 @@ The system SHALL summarize each discovered project's workflow health from existi
 - **WHEN** the user runs doctor for a project
 - **THEN** the dashboard shows pass, warning, and failure counts plus the raw doctor output
 
-#### Scenario: Tool capability status grouped by AI host
+#### Scenario: Tool capability status grouped by tool
 - **WHEN** the dashboard loads a project
-- **THEN** it groups capabilities by `Codex App`, `Claude CLI`, and shared tooling, with English tool names as titles and Chinese descriptions as subtitles
+- **THEN** it groups capabilities by `OpenSpec`, `GStack`, and `Superpowers`, with English tool names as titles and Chinese descriptions as subtitles
 
 #### Scenario: Capability state and details are distinct
 - **WHEN** a capability is displayed
 - **THEN** availability is shown as non-clickable state text while version, install path, or detection detail is shown separately
+
+#### Scenario: AI host support matrix shown per tool
+- **WHEN** a tool capability is displayed
+- **THEN** the dashboard shows how `Codex App` and `Claude CLI` support that tool, including install status, support scope, version, or install path
 
 #### Scenario: Version and update guidance shown
 - **WHEN** a capability supports version detection
@@ -37,6 +45,10 @@ The system SHALL summarize each discovered project's workflow health from existi
 #### Scenario: Workflow capability definitions are visible
 - **WHEN** a workflow capability is displayed
 - **THEN** the dashboard shows whether the installed workflow defines it and lists the related commands or skills when defined
+
+#### Scenario: Official and workflow-used skills are separated
+- **WHEN** a tool has official skills or commands
+- **THEN** the dashboard separates official tool definitions, skills used by agentic-workflow, and unused available skills with short purpose descriptions
 
 #### Scenario: Workflow explanations are collapsible
 - **WHEN** workflow definitions are displayed
@@ -86,3 +98,7 @@ The system SHALL provide a dark, dense, terminal-inspired dashboard interface su
 #### Scenario: Project detail inspection
 - **WHEN** the user selects a project
 - **THEN** the UI presents project metadata, OpenSpec statistics, doctor results, and available workflow actions without navigating away from the dashboard context
+
+#### Scenario: Menu navigation keeps content focused
+- **WHEN** the user switches between overview, tools, workflows, health, and settings
+- **THEN** the dashboard shows only the selected functional area while preserving the selected project context

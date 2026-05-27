@@ -114,14 +114,44 @@ async function getCodexSuperpowersVersion(root) {
 }
 
 /**
+ * 生成宿主支持信息。
+ * @param {object} options 宿主支持参数。
+ * @returns {object} 宿主支持展示模型。
+ */
+function hostSupport(options) {
+  return {
+    host: options.host,
+    supported: options.supported,
+    status: options.supported ? '已支持' : '未检测到',
+    install: options.install,
+    version: options.version,
+    updateAction: options.updateAction ?? null,
+    updateHint: options.updateHint,
+    updateAvailable: Boolean(options.updateAvailable)
+  };
+}
+
+/**
+ * 生成技能说明项。
+ * @param {string} name 技能或命令名称。
+ * @param {string} purpose 中文用途说明。
+ * @param {string[]} workflows 使用该能力的工作流列表。
+ * @returns {object} 技能说明模型。
+ */
+function skillItem(name, purpose, workflows = []) {
+  return { name, purpose, workflows };
+}
+
+/**
  * 检测本机工作流增强工具能力。
- * @returns {Promise<{groups: Array<{id: string, title: string, capabilities: object[]}>}>} 工具能力状态。
+ * @returns {Promise<{summary: object, tools: object[]}>} 工具能力状态。
  */
 export async function detectCapabilities() {
   const openspecVersion = await getOpenSpecVersionInfo();
   const codexGstackRoot = path.join(os.homedir(), '.gstack/repos/gstack');
+  const codexGstackSkillRoot = path.join(os.homedir(), '.codex/skills/gstack');
   const claudeGstackRoot = path.join(os.homedir(), '.claude/skills/gstack');
-  const codexGstack = await pathExists(path.join(os.homedir(), '.codex/skills/gstack'));
+  const codexGstack = await pathExists(codexGstackSkillRoot);
   const claudeGstack = await pathExists(claudeGstackRoot) || await pathExists(codexGstackRoot);
   const codexGstackVersion = codexGstack ? await getGStackVersionInfo(codexGstackRoot) : { current: '', latest: '', updateAvailable: false };
   const claudeGstackVersion = await pathExists(claudeGstackRoot)
@@ -133,14 +163,6 @@ export async function detectCapabilities() {
   const claudeSuperpowers = await pathExists(path.join(os.homedir(), '.claude/skills/superpowers'))
     || await pathExists(path.join(os.homedir(), '.claude/plugins/superpowers'))
     || codexSuperpowers;
-  const totalCapabilities = 5;
-  const availableCapabilities = [
-    Boolean(openspecVersion.current),
-    codexGstack,
-    codexSuperpowers,
-    claudeGstack,
-    claudeSuperpowers
-  ].filter(Boolean).length;
   const updateCount = [
     openspecVersion.updateAvailable,
     codexGstackVersion.updateAvailable,
@@ -149,131 +171,161 @@ export async function detectCapabilities() {
 
   return {
     summary: {
-      availableCapabilities,
-      totalCapabilities,
+      totalTools: 3,
+      readyTools: [
+        Boolean(openspecVersion.current),
+        codexGstack || claudeGstack,
+        codexSuperpowers || claudeSuperpowers
+      ].filter(Boolean).length,
       updateCount,
-      beginnerText: 'OpenSpec 负责记录需求和任务，GStack 负责审查质量，Superpowers 负责复杂任务的方法论。下面按 AI 工具分组展示安装、版本、更新方式和工作流定义。'
+      overviewText: 'OpenSpec 负责把需求变成可追踪的 proposal/design/tasks；GStack 负责工程、安全、设计和代码审查；Superpowers 负责 TDD、debug、计划和完成前验证等方法论。'
     },
-    groups: [
+    tools: [
       {
-        id: 'shared',
-        title: 'Shared',
-        subtitle: '跨 Codex App 与 Claude CLI 共享的基础能力',
-        capabilities: [
-          {
-            id: 'openspec',
-            title: 'OpenSpec CLI',
-            subtitle: '变更管理与 proposal/design/tasks/archive 状态机',
-            available: Boolean(openspecVersion.current),
-            status: openspecVersion.current ? '可用' : '缺失',
-            detail: openspecVersion.current ? '全局 CLI 命令' : '未检测到 openspec 命令',
-            version: {
-              current: openspecVersion.current || '未安装',
-              latest: openspecVersion.latest || '未获取',
-              updateAvailable: openspecVersion.updateAvailable,
-              updateMode: 'command',
-              updateAction: 'update-openspec',
-              updateHint: '使用 npm 更新全局 @fission-ai/openspec'
-            },
-            definedInWorkflow: true,
-            definedItems: ['openspec-propose', 'openspec-apply-change', 'openspec-archive-change', 'openspec-explore']
-          }
+        id: 'openspec',
+        title: 'OpenSpec',
+        subtitle: '需求、设计、任务和归档的变更管理工具',
+        purpose: 'OpenSpec 像一份工作流账本：每次重要变更都要留下为什么做、怎么做、做到哪一步。',
+        design: 'agentic-workflow 通过 openspec change schema 生成 proposal/design/spec/tasks，并用 status/validate/archive 管理状态。',
+        version: {
+          current: openspecVersion.current || '未安装',
+          latest: openspecVersion.latest || '未获取',
+          updateAvailable: openspecVersion.updateAvailable,
+          updateAction: 'update-openspec',
+          updateHint: '使用 npm 更新全局 @fission-ai/openspec'
+        },
+        aiSupport: [
+          hostSupport({
+            host: 'Codex App',
+            supported: Boolean(openspecVersion.current),
+            install: '全局 openspec CLI',
+            version: openspecVersion.current || '未安装',
+            updateAction: 'update-openspec',
+            updateAvailable: openspecVersion.updateAvailable,
+            updateHint: 'Codex 调用本机 openspec 命令执行 propose/apply/archive。'
+          }),
+          hostSupport({
+            host: 'Claude CLI',
+            supported: Boolean(openspecVersion.current),
+            install: '全局 openspec CLI',
+            version: openspecVersion.current || '未安装',
+            updateAction: 'update-openspec',
+            updateAvailable: openspecVersion.updateAvailable,
+            updateHint: 'Claude CLI 同样依赖本机 openspec 命令。'
+          })
+        ],
+        officialSkills: [
+          skillItem('openspec-propose', '创建 proposal、design、spec 和 tasks。'),
+          skillItem('openspec-apply-change', '按 tasks 执行实现并保持 OpenSpec 状态同步。'),
+          skillItem('openspec-archive-change', '把已完成 change 归档并同步正式 spec。'),
+          skillItem('openspec-explore', '在进入正式 proposal 前探索需求和边界。')
+        ],
+        workflowSkills: [
+          skillItem('openspec-propose', '小需求和完整通道的提案入口。', ['/wf-small', '/wf-complex']),
+          skillItem('openspec-apply-change', '确认方案后执行实现。', ['/wf-small', '/wf-complex']),
+          skillItem('openspec-archive-change', '完成后归档变更。', ['/wf-small', '/wf-complex']),
+          skillItem('openspec-explore', '复杂需求先探索再定方案。', ['/wf-complex'])
+        ],
+        unusedSkills: []
+      },
+      {
+        id: 'gstack',
+        title: 'GStack',
+        subtitle: '工程审查、设计审查、安全审查和代码审查工具集',
+        purpose: 'GStack 是审查搭档：在开工前检查架构风险，完成后检查代码质量。',
+        design: 'agentic-workflow 通过 host command mapping 把通用审查动作映射到 Codex App 与 Claude CLI 的不同命令。',
+        version: {
+          current: codexGstackVersion.current || claudeGstackVersion.current || '未安装',
+          latest: codexGstackVersion.latest || claudeGstackVersion.latest || '未获取',
+          updateAvailable: codexGstackVersion.updateAvailable || claudeGstackVersion.updateAvailable,
+          updateHint: 'Codex 与 Claude 的安装目录不同，更新动作需要按宿主分别执行。'
+        },
+        aiSupport: [
+          hostSupport({
+            host: 'Codex App',
+            supported: codexGstack,
+            install: codexGstack ? '~/.codex/skills/gstack' : '未检测到 Codex GStack skills',
+            version: codexGstackVersion.current || '未安装',
+            updateAction: 'update-codex-gstack',
+            updateAvailable: codexGstackVersion.updateAvailable,
+            updateHint: '通过 ~/.gstack/repos/gstack 拉取后执行 setup --host codex。'
+          }),
+          hostSupport({
+            host: 'Claude CLI',
+            supported: claudeGstack,
+            install: claudeGstack ? '~/.claude/skills/gstack 或 ~/.gstack/repos/gstack' : '未检测到 Claude/GStack 安装',
+            version: claudeGstackVersion.current || '未安装',
+            updateAction: 'update-claude-gstack',
+            updateAvailable: claudeGstackVersion.updateAvailable,
+            updateHint: '通过 Claude 侧安装目录拉取后执行 setup。'
+          })
+        ],
+        officialSkills: [
+          skillItem('/plan-eng-review', '工程方案审查，关注架构、数据流、边界和测试。'),
+          skillItem('/plan-design-review', '设计方案审查，关注 UI 信息架构和体验一致性。'),
+          skillItem('/cso', '安全审查，关注凭证、权限、配置和高风险操作。'),
+          skillItem('/review', '实现后的代码审查，关注缺陷、回归和测试缺口。'),
+          skillItem('/qa', '浏览器或产品层面的系统化验证。')
+        ],
+        workflowSkills: [
+          skillItem('/gstack-plan-eng-review', 'Codex App 中的工程 gate。', ['/wf-small', '/wf-complex', '/wf-plan']),
+          skillItem('/gstack-plan-design-review', 'Codex App 中的 UI/设计 gate。', ['/wf-complex']),
+          skillItem('/gstack-cso', 'Codex App 中的安全 gate。', ['按规则条件触发']),
+          skillItem('/gstack-review', 'Codex App 中的代码审查。', ['/wf-small', '/wf-complex']),
+          skillItem('/plan-eng-review', 'Claude CLI 中的工程 gate。', ['/wf-small', '/wf-complex', '/wf-plan']),
+          skillItem('/review', 'Claude CLI 中的代码审查。', ['/wf-small', '/wf-complex'])
+        ],
+        unusedSkills: [
+          skillItem('/qa', '官方可用，但当前 `/wf-*` 默认没有强制绑定。'),
+          skillItem('/benchmark', '官方可用，适合性能回归场景，当前工作流未默认使用。')
         ]
       },
       {
-        id: 'codex',
-        title: 'Codex App',
-        subtitle: 'Codex App 侧可加载的 skills 与插件',
-        capabilities: [
-          {
-            id: 'codex-gstack',
-            title: 'GStack',
-            subtitle: '工程审查、安全审查和代码审查',
-            available: codexGstack,
-            status: codexGstack ? '可用' : '缺失',
-            detail: codexGstack ? '~/.codex/skills/gstack' : '未检测到 Codex GStack skills',
-            version: {
-              current: codexGstackVersion.current || '未安装',
-              latest: codexGstackVersion.latest || '未获取',
-              updateAvailable: codexGstackVersion.updateAvailable,
-              updateMode: 'command',
-              updateAction: 'update-codex-gstack',
-              updateHint: 'Codex 侧 GStack 通过 ~/.gstack/repos/gstack 更新后重新 setup --host codex'
-            },
-            definedInWorkflow: true,
-            definedItems: ['/gstack-plan-eng-review', '/gstack-plan-design-review', '/gstack-cso', '/gstack-review']
-          },
-          {
-            id: 'codex-superpowers',
-            title: 'Superpowers',
-            subtitle: 'TDD、debug、verification 等方法论 skill',
-            available: codexSuperpowers,
-            status: codexSuperpowers ? '可用' : '缺失',
-            detail: codexSuperpowers ? '~/.codex/plugins/cache/openai-curated/superpowers' : '未检测到 Codex Superpowers 插件',
-            version: {
-              current: codexSuperpowersVersion || '未安装',
-              latest: '由 Codex 插件市场检查',
-              updateAvailable: false,
-              updateMode: 'manual',
-              updateHint: '打开 Codex 插件面板，在 Coding 分类中更新 Superpowers'
-            },
-            definedInWorkflow: true,
-            definedItems: [
-              'superpowers:brainstorming',
-              'superpowers:writing-plans',
-              'superpowers:systematic-debugging',
-              'superpowers:test-driven-development',
-              'superpowers:verification-before-completion'
-            ]
-          }
-        ]
-      },
-      {
-        id: 'claude',
-        title: 'Claude CLI',
-        subtitle: 'Claude CLI 侧命令与 skill 支持',
-        capabilities: [
-          {
-            id: 'claude-gstack',
-            title: 'GStack',
-            subtitle: 'Claude CLI 侧工程审查、安全审查和代码审查',
-            available: claudeGstack,
-            status: claudeGstack ? '可用' : '缺失',
-            detail: claudeGstack ? '~/.claude/skills/gstack 或 ~/.gstack/repos/gstack' : '未检测到 Claude/GStack 安装',
-            version: {
-              current: claudeGstackVersion.current || '未安装',
-              latest: claudeGstackVersion.latest || '未获取',
-              updateAvailable: claudeGstackVersion.updateAvailable,
-              updateMode: 'command',
-              updateAction: 'update-claude-gstack',
-              updateHint: 'Claude CLI 侧 GStack 通过 ~/.claude/skills/gstack 更新后重新 setup'
-            },
-            definedInWorkflow: true,
-            definedItems: ['/plan-eng-review', '/plan-design-review', '/cso', '/review']
-          },
-          {
-            id: 'claude-superpowers',
-            title: 'Superpowers',
-            subtitle: 'Claude CLI 侧 Superpowers 方法论支持',
-            available: claudeSuperpowers,
-            status: claudeSuperpowers ? '可用' : '缺失',
-            detail: claudeSuperpowers ? '检测到 Superpowers 可用来源' : '未检测到 Claude Superpowers 安装',
-            version: {
-              current: codexSuperpowersVersion || '需在 Claude 插件中查看',
-              latest: '由 Claude 插件市场检查',
-              updateAvailable: false,
-              updateMode: 'manual',
-              updateHint: 'Claude CLI 使用 /plugin install superpowers@claude-plugins-official 或插件市场更新'
-            },
-            definedInWorkflow: true,
-            definedItems: [
-              'wf-debug: superpowers:systematic-debugging',
-              'wf-debug: superpowers:test-driven-development',
-              'wf-complex: superpowers:brainstorming',
-              'wf-complex: superpowers:writing-plans',
-              'wf-complex: superpowers:verification-before-completion'
-            ]
-          }
+        id: 'superpowers',
+        title: 'Superpowers',
+        subtitle: '计划、TDD、debug 和完成前验证的方法论技能',
+        purpose: 'Superpowers 不是业务插件，它是一组让 AI 做事更稳的方法：先想清楚、再测试、遇到问题系统排查、完成前验证。',
+        design: 'agentic-workflow 在不同 `/wf-*` 中声明 required 或 conditional skills，执行者需要先加载对应 skill 文档再继续。',
+        version: {
+          current: codexSuperpowersVersion || '需在宿主插件中查看',
+          latest: '由宿主插件市场检查',
+          updateAvailable: false,
+          updateHint: 'Superpowers 通常由 Codex 或 Claude 的插件系统管理，不伪装成统一一键更新。'
+        },
+        aiSupport: [
+          hostSupport({
+            host: 'Codex App',
+            supported: codexSuperpowers,
+            install: codexSuperpowers ? '~/.codex/plugins/cache/openai-curated/superpowers' : '未检测到 Codex Superpowers 插件',
+            version: codexSuperpowersVersion || '未安装',
+            updateHint: '在 Codex 插件面板中更新 Superpowers。'
+          }),
+          hostSupport({
+            host: 'Claude CLI',
+            supported: claudeSuperpowers,
+            install: claudeSuperpowers ? 'Claude 插件或共享 skill 来源' : '未检测到 Claude Superpowers 安装',
+            version: codexSuperpowersVersion || '需在 Claude 插件中查看',
+            updateHint: '使用 Claude 插件市场或 /plugin install superpowers@claude-plugins-official 更新。'
+          })
+        ],
+        officialSkills: [
+          skillItem('superpowers:brainstorming', '创意和方案发散前先澄清目标。'),
+          skillItem('superpowers:writing-plans', '把复杂实现拆成可执行计划。'),
+          skillItem('superpowers:executing-plans', '按计划逐项执行并保持状态同步。'),
+          skillItem('superpowers:systematic-debugging', '遇到 bug 时按证据链定位根因。'),
+          skillItem('superpowers:test-driven-development', '用测试先约束行为再实现。'),
+          skillItem('superpowers:verification-before-completion', '完成前验证，避免没跑测试就声称完成。')
+        ],
+        workflowSkills: [
+          skillItem('superpowers:verification-before-completion', '完成前条件 skill。', ['/wf-small', '/wf-complex', '/wf-debug']),
+          skillItem('superpowers:systematic-debugging', 'debug 场景必备方法。', ['/wf-debug']),
+          skillItem('superpowers:test-driven-development', '测试驱动开发场景。', ['/wf-debug']),
+          skillItem('superpowers:brainstorming', '复杂需求探索阶段。', ['/wf-complex']),
+          skillItem('superpowers:writing-plans', '复杂需求落执行计划。', ['/wf-complex'])
+        ],
+        unusedSkills: [
+          skillItem('superpowers:subagent-driven-development', '官方可用，适合多代理并行开发，当前工作流未默认启用。'),
+          skillItem('superpowers:using-git-worktrees', '官方可用，适合隔离分支开发，当前工作流未默认启用。')
         ]
       }
     ]

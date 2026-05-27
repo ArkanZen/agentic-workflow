@@ -26,6 +26,9 @@
 - [x] 3.12 将 OpenSpec、GStack、Superpowers 能力页改为仅展示版本检测结果，不提供更新方式或更新动作，覆盖 Project health summary。
 - [x] 3.13 增加给本地项目安装工作流的设置页入口和受控安装动作，覆盖 Controlled workflow actions 与 Project discovery。
 - [x] 3.14 为安装动作和工具能力版本检测补充单元测试，覆盖 Controlled workflow actions 与 Project health summary。
+- [x] 3.15 将左侧栏重构为全局主导航 + 项目列表，覆盖 Geek style dashboard UI。
+- [x] 3.16 将安装工作流、工具能力、扫描设置、关于工作流拆成全局页面，不再依赖选中项目，覆盖 Controlled workflow actions、Project health summary 与 Project discovery。
+- [x] 3.17 收敛项目详情页，只保留项目总览、健康检查、OpenSpec 统计和项目维护动作，覆盖 Project health summary 与 OpenSpec statistics。
 
 ## 4. 验证与文档
 

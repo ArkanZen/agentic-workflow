@@ -1,5 +1,9 @@
-## ADDED Requirements
+# local-workflow-dashboard Specification
 
+## Purpose
+定义 agentic-workflow 本地 Dashboard 的项目发现、状态展示、工具能力、受控维护动作和极客风界面要求。
+
+## Requirements
 ### Requirement: Project discovery
 The system SHALL discover local projects that have agentic-workflow installed or partially configured, within explicit scan roots.
 
@@ -106,3 +110,15 @@ The system SHALL provide a dark, dense, terminal-inspired dashboard interface su
 #### Scenario: Menu navigation keeps content focused
 - **WHEN** the user switches between overview, tools, workflows, health, and settings
 - **THEN** the dashboard shows only the selected functional area while preserving the selected project context
+
+#### Scenario: Global navigation separates shared functions
+- **WHEN** the dashboard renders the left sidebar
+- **THEN** it shows global navigation entries for dashboard overview, projects, workflow installation, tool capabilities, scan settings, and workflow documentation
+
+#### Scenario: Install workflow is global
+- **WHEN** the user opens workflow installation
+- **THEN** the install form is shown as a global page and does not require an already installed project to be selected
+
+#### Scenario: Project detail contains project-scoped actions only
+- **WHEN** the user opens a project detail view
+- **THEN** the page shows project overview, health check, OpenSpec stats, and project maintenance actions without global installation or global scan settings controls

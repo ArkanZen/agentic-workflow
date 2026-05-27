@@ -42,7 +42,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .signal {
@@ -135,6 +135,27 @@ button:disabled {
   margin: 12px 0 0;
 }
 
+.main-nav {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.main-nav button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 36px;
+  color: #9cc9c0;
+}
+
+.main-nav button.active {
+  color: #05070a;
+  background: #63ffb6;
+  border-color: #63ffb6;
+}
+
 .scan-summary {
   display: grid;
   grid-template-columns: 1fr auto auto;
@@ -170,6 +191,22 @@ button:disabled {
 .project-list {
   display: grid;
   gap: 8px;
+}
+
+.project-list-main {
+  max-height: 280px;
+  overflow: auto;
+}
+
+.project-picker-panel {
+  display: none;
+}
+
+.sidebar-section-title {
+  color: #6ac7ff;
+  font-size: 12px;
+  margin: 12px 0 8px;
+  text-transform: uppercase;
 }
 
 .project-row {
@@ -718,6 +755,14 @@ pre {
   .sidebar {
     border-right: 0;
     border-bottom: 1px solid rgba(89, 255, 186, 0.24);
+  }
+
+  .main-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .project-picker-panel {
+    display: block;
   }
 
   .metrics,

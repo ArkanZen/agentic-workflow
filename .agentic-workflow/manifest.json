@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "workflowVersion": "1.1.10",
+  "workflowVersion": "1.2.0",
   "tier": "vibe",
-  "installedAt": "2026-05-22T03:03:04Z",
+  "installedAt": "2026-05-27T07:59:24Z",
   "workflowPath": "/Users/ryan/aiworkspace/agentic-workflow",
   "sourceRepo": "https://github.com/ArkanZen/agentic-workflow",
   "hosts": {
@@ -24,20 +24,20 @@
     }
   },
   "files": [
-    {"path": ".claude/CLAUDE.md", "sha256": "2710c7442fd103c0e83bc5567a23fca7c5cc53674e9ec33c5e260207ee123a24"},
-    {"path": ".claude/commands/wf-complex.md", "sha256": "dc700cf9220cc4f582ae43fdd80ec4f9fc827e0cd24eba6f0d403c35bbfc14f8"},
-    {"path": ".claude/commands/wf-debug.md", "sha256": "dc043ae166e23e9ae252a89643c379ff78697155e104f9db94106d6cc335183f"},
-    {"path": ".claude/commands/wf-install.md", "sha256": "46f76d8426207febf91dfc8a9fe8c6a0bc2c86ca5103f7b0fcd3014c21b94a32"},
-    {"path": ".claude/commands/wf-plan.md", "sha256": "a4799cf422507bcd17ba28dfff4d95b5633eae7ab9b3bbb01e0fa1b3ce731945"},
-    {"path": ".claude/commands/wf-quick.md", "sha256": "70ce3b0569ad116862c2a8f2f6232215bcc8b0e065ad771e48ff9e56dd0cf87c"},
-    {"path": ".claude/commands/wf-small.md", "sha256": "4cb7723eadb29d968fe0ad571227f9f3a04bef4a1290a404186a77156b0bd4e1"},
-    {"path": ".codex/skills/wf-complex/SKILL.md", "sha256": "c26a6b4118197da2451cfb4376b52eb0aea5c455266909a07e71062e4ea14592"},
-    {"path": ".codex/skills/wf-debug/SKILL.md", "sha256": "586cf778d12e9c64a8f72e13c8141ac4bf761fc00be034068799806e6d239528"},
-    {"path": ".codex/skills/wf-install/SKILL.md", "sha256": "b10486eab5a8ee43537f9c07e01ff335143afa8119af7f2e5e24774ce9666b99"},
-    {"path": ".codex/skills/wf-plan/SKILL.md", "sha256": "dabc43e7ce500b521bd5d343097789a76c04ac7c29f4b3a4b605688cf4f9b233"},
-    {"path": ".codex/skills/wf-quick/SKILL.md", "sha256": "6606a583163015f24c6dc547f173199abd8e366ae1239517e1583c8e1e7f7065"},
-    {"path": ".codex/skills/wf-small/SKILL.md", "sha256": "41e80cb39e814b91665febe877f467503ee881563cdb12bfb2c4ab736b62f1c4"},
-    {"path": "AGENTS.md", "sha256": "2272ad7e4c5ee45079e2cd261bebc44a52baaa87d0540430e62ce5e0617cae91"},
-    {"path": "openspec/config.yaml", "sha256": "f3fb18d86c8a7a67a5a8257e0fe0980ac69b3d6fb1ac27b257e7827b70c674f9"}
+    {"path": ".claude/CLAUDE.md", "sha256": "4a4589a48f13dc76dbc85a6459a58945a00aa9da80b37e1c52525ae67f8b9d0f"},
+    {"path": ".claude/commands/wf-complex.md", "sha256": "adcaa0c05d9f8f34ba82e0c7ee7443d08bc2852c06b22b6559ca7cf0c1264521"},
+    {"path": ".claude/commands/wf-debug.md", "sha256": "b6c6ef9ee1bcf68074a36de303302b78c13289172e91c750053eb2d909cd833d"},
+    {"path": ".claude/commands/wf-install.md", "sha256": "238fa79fd6c4ea49c70adfd5243c054ee271c966fa765c1bd0869669bd876521"},
+    {"path": ".claude/commands/wf-plan.md", "sha256": "34fbe75e83ea63b036b338832905ec71154766c2ecad61194d56433d69aed4cf"},
+    {"path": ".claude/commands/wf-quick.md", "sha256": "ff9ba28c288a12bab9155f43eae8069cb07ea1acf6ddb160d3a62f579baada8b"},
+    {"path": ".claude/commands/wf-small.md", "sha256": "35b11bd12d7ad312b5b09cdf14962c3f342ab328c12d27705881186f5fed5c37"},
+    {"path": ".codex/skills/wf-complex/SKILL.md", "sha256": "b3449d8aa0a00616623648db94d31f742b648067925e6d8029d05584df1429ec"},
+    {"path": ".codex/skills/wf-debug/SKILL.md", "sha256": "19207fcf8b4dc2fbcd02830660a92a255c0747ca194975044c5c563f2b1f1238"},
+    {"path": ".codex/skills/wf-install/SKILL.md", "sha256": "fd15cb1b05384cb28fb48b45511b33ba85f1f4b7935f64b8a61bf1cadd0f3901"},
+    {"path": ".codex/skills/wf-plan/SKILL.md", "sha256": "fc43718d19f74afc4d8bdf609f4eebee569688c2c94f948a0e05e9114c0ddaff"},
+    {"path": ".codex/skills/wf-quick/SKILL.md", "sha256": "fe4c15cb3fefb94add8b526ffcf21d4b5d9db83649188aacd87a3fb6a0582d37"},
+    {"path": ".codex/skills/wf-small/SKILL.md", "sha256": "49594889e60a966097f1ef2e83aeb425031b6d1e6e394dd967a6f4897519ed5a"},
+    {"path": "AGENTS.md", "sha256": "81ad4f54f35b7e3a7bd6994b419e4bbe6d222b6fac7d87bec30665e368085b3e"},
+    {"path": "openspec/config.yaml", "sha256": "d979b1ac7ac20c3a02661ffff75175845e8a8c2fbcb96b1554e7052433c75b35"}
   ]
 }

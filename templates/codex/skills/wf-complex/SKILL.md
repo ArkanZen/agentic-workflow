@@ -31,6 +31,15 @@ required_workflows:
 required_reviews:
   design_gate:
     - /gstack-plan-eng-review
+  implementation_review:
+    - /gstack-review
+conditional_reviews:
+  ui_risk:
+    - /gstack-plan-design-review
+  security_risk:
+    - /gstack-cso
+  browser_qa:
+    - /gstack-qa
 ```
 
 若宿主环境没有对应 skill 或审查命令，必须先明确说明缺失项和影响，再等待用户确认是否降级继续；不得声称已加载或已审查。
@@ -49,14 +58,15 @@ required_reviews:
 - 当前工作流：`wf-complex`
 - 必须加载的 Superpowers skill：`brainstorming`、`writing-plans`、`verification-before-completion`
 - 必须执行的 OpenSpec workflow：`openspec-propose`、`openspec-apply-change`、`openspec-archive-change`
-- 必须执行的审查：`/gstack-plan-eng-review`
+- 必须执行的审查：`/gstack-plan-eng-review`、实现后的 `/gstack-review`
+- 条件审查：UI 风险触发 `/gstack-plan-design-review`；安全风险触发 `/gstack-cso`；Web 流程触发 `/gstack-qa`
 - 已加载状态：逐项标记已加载 / 未加载并说明降级原因
 
 执行以下步骤：
 1. 读取 openspec/config.yaml 中 commit_checkpoints.start 规则并执行。
 2. 加载并执行 `superpowers:brainstorming`，探索需求、边界、风险和替代方案。
-3. 展示探索结论、风险和推荐路径，使用 UI 交互询问用户是否确认进入 OpenSpec 提案。
-4. 用户确认后，执行 `/openspec-propose`（含 `/gstack-plan-eng-review` gate）；不得手写替代 proposal 流程。
+3. 对照 `risk_triggers` 判断本次变更命中的风险类型，展示探索结论、风险和推荐路径，使用 UI 交互询问用户是否确认进入 OpenSpec 提案。
+4. 用户确认后，执行 `/openspec-propose`（含 `/gstack-plan-eng-review`，并按风险触发 UI/安全 gate）；不得手写替代 proposal 流程。
 5. proposal/design/tasks 生成后必须展示：
    - proposal.md / design.md / tasks.md 的绝对路径链接
    - design 顶部 gate 状态摘要
@@ -64,10 +74,12 @@ required_reviews:
 6. 使用 UI 交互询问用户是否确认该设计和 tasks；用户确认前不得实现。
 7. apply 前加载并执行 `superpowers:writing-plans` 细化任务分解，并再次展示最终任务摘要。
 8. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
-9. 完成后加载并执行 `superpowers:verification-before-completion` 验收，并在结果中说明已验证项。
-10. 验证通过后同步 `tasks.md` 勾选状态；若存在无法确认完成的任务，先告知用户并保留未勾选状态。
-11. 询问用户是否归档；用户确认后再执行 /openspec-archive-change。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑。
-12. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
+9. 实现完成后执行 `/gstack-review`；若审查阻断，先修复再进入验收。
+10. 若命中 Web 流程风险，执行 `/gstack-qa` 或说明降级验证方式。
+11. 完成后加载并执行 `superpowers:verification-before-completion` 验收，并在结果中说明已验证项。
+12. 验证通过后同步 `tasks.md` 勾选状态；若存在无法确认完成的任务，先告知用户并保留未勾选状态。
+13. 询问用户是否归档；用户确认后再执行 /openspec-archive-change。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑。
+14. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
 
 ## 收尾审计
 
@@ -77,4 +89,5 @@ required_reviews:
 - 强制依赖 skill：逐项列出已加载 / 降级原因
 - OpenSpec workflow：列出 `propose`、`apply`、`archive` 的执行状态
 - GStack gate：列出审查命令、状态和是否阻断
+- 风险触发器：列出命中风险、条件 gate 和跳过原因
 - 验证：列出实际运行的命令和结果

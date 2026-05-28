@@ -12,20 +12,22 @@ description: 小需求：功能点清晰、改动范围明确，走 OpenSpec 完
 执行以下步骤：
 1. 读取 openspec/config.yaml 中 commit_checkpoints.start 规则并执行。
 2. 将用户输入作为需求背景，不重复询问已说明的信息
-3. 执行 /openspec-propose，生成 proposal、design gate 和 tasks
-4. 若 gate 阻断，先根据审查意见修改 proposal/design，再继续
-5. 生成完成后必须展示：
+3. 对照 `openspec/config.yaml` 的 `risk_triggers` 判断本次变更命中的风险类型，并用最多 6 行轻量表格列出结果。表格格式：`| 风险 | 命中 | 触发能力 |`；风险只覆盖架构/UI/安全/测试/数据口径/浏览器验证，理由只在必要时用不超过 12 个字补充
+4. 执行 /openspec-propose，生成 proposal、按风险触发的 design gate 和 tasks
+5. 若任一 gate 阻断，先根据审查意见修改 proposal/design，再继续
+6. 生成完成后必须展示：
    - proposal.md / design.md / tasks.md 的绝对路径
-   - design 顶部 gate 状态摘要
+   - design 顶部 gate 状态摘要；若未触发某 gate，说明未触发理由
    - tasks.md 中的 checkbox 清单摘要
-6. 用 AskUserQuestion 询问用户是否确认进入实现：
+7. 若命中测试风险，先加载 superpowers:test-driven-development 并把测试约束写入 tasks
+8. 用 AskUserQuestion 询问用户是否确认进入实现：
    - 选项 A：确认实现（推荐）
    - 选项 B：修改设计/任务
    - 选项 C：取消
    用户确认前，不得执行 /openspec-apply-change。
-7. 用户确认后，执行 /openspec-apply-change 实现
-8. 实现完成后运行必要验证或 review，并在结果中说明已验证项
-9. 验证通过后同步 `tasks.md`：将已确认完成的任务从 `- [ ]` 勾选为 `- [x]`；若存在无法确认完成的任务，先告知用户并保留未勾选状态
-10. 询问用户是否归档；用户确认后再执行 /openspec-archive-change
-11. 归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑
-12. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync
+9. 用户确认后，执行 /openspec-apply-change 实现
+10. 完成前调用 superpowers:verification-before-completion，运行必要验证并说明已验证项
+11. 验证通过后同步 `tasks.md`：将已确认完成的任务从 `- [ ]` 勾选为 `- [x]`；若存在无法确认完成的任务，先告知用户并保留未勾选状态
+12. 询问用户是否归档；用户确认后再执行 /openspec-archive-change
+13. 归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑
+14. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync

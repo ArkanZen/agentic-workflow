@@ -24,6 +24,23 @@ quick_change_criteria: |
             已知 bug 修复、文档更新。
   不适用：任何涉及数据流变更、新接口、外部调用、配置处理的改动。
 
+risk_triggers:
+  spec_change:
+    when: 新功能、行为变化、接口变化、项目可见能力变化。
+    capabilities: [openspec-propose, openspec-apply-change, openspec-archive-change]
+  ui:
+    when: 新增页面、核心流程、交互、信息架构、可视化或布局体系变化。
+    capabilities: [/plan-design-review, /design-review]
+  browser_qa:
+    when: Web UI、交互流程、视觉回归、控制台错误或端到端路径。
+    capabilities: [/qa, /qa-only]
+  test_driven:
+    when: 新行为、核心逻辑、修 bug 防回归或需要先约束行为。
+    capabilities: [superpowers:test-driven-development]
+  final_verification:
+    when: 所有实现型任务在声明完成前都需要验证。
+    capabilities: [superpowers:verification-before-completion]
+
 rules:
   proposal:
     - 提案控制在 600 字以内。

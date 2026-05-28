@@ -26,6 +26,32 @@ quick_change_criteria: |
   不适用：任何涉及数据流变更、新接口、外部调用、配置处理的改动。
   不适用：任何同时修改前端和后端代码的改动（无论文件数）。
 
+risk_triggers:
+  spec_change:
+    when: 新功能、行为变化、接口变化、项目可见能力变化。
+    capabilities: [openspec-propose, openspec-apply-change, openspec-archive-change]
+  architecture:
+    when: 跨模块、数据流、边界调整、核心抽象变化。
+    capabilities: [/plan-eng-review]
+  ui:
+    when: 新增页面、核心流程、交互、信息架构、可视化或布局体系变化。
+    capabilities: [/plan-design-review, /design-review]
+  security:
+    when: 凭证、权限、认证鉴权、外部 API、部署配置或敏感数据处理。
+    capabilities: [/cso]
+  code_review:
+    when: 复杂实现、核心逻辑、重构后行为不确定或回归风险较高。
+    capabilities: [/review]
+  browser_qa:
+    when: Web UI、交互流程、视觉回归、控制台错误或端到端路径。
+    capabilities: [/qa, /qa-only]
+  planning:
+    when: 多步骤、多文件、执行路径不清晰或需要拆分任务。
+    capabilities: [superpowers:writing-plans]
+  final_verification:
+    when: 所有实现型任务在声明完成前都需要验证。
+    capabilities: [superpowers:verification-before-completion]
+
 rules:
   proposal:
     - 提案控制在 600 字以内。

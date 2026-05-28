@@ -4,6 +4,7 @@ import { detectCapabilities } from './capabilities.js';
 import { directoryExists, normalizeScanRoots } from './paths.js';
 import { parseConfigMarkers } from './parse.js';
 import { readOpenSpecStats } from './openspec.js';
+import { buildProjectStrategy } from './strategy.js';
 
 // 扫描深度上限，避免误扫大型目录造成卡顿。
 const MAX_SCAN_DEPTH = 4;
@@ -58,6 +59,32 @@ async function hasWorkflowSignal(directory) {
 }
 
 /**
+ * 判断目录是否像一个可安装工作流的普通项目。
+ * @param {string} directory 待检查目录。
+ * @returns {Promise<boolean>} 命中常见项目文件时返回 true。
+ */
+async function hasProjectSignal(directory) {
+  const signals = [
+    '.git',
+    'package.json',
+    'pyproject.toml',
+    'requirements.txt',
+    'go.mod',
+    'pom.xml',
+    'Cargo.toml'
+  ];
+  const results = await Promise.all(signals.map(async (signal) => {
+    try {
+      await fs.access(path.join(directory, signal));
+      return true;
+    } catch {
+      return false;
+    }
+  }));
+  return results.some(Boolean);
+}
+
+/**
  * 递归扫描目录，收集包含工作流信号的项目目录。
  * @param {string} root 扫描根目录。
  * @param {number} depth 当前递归深度。
@@ -68,7 +95,7 @@ async function scanDirectory(root, depth, projects) {
   if (depth > MAX_SCAN_DEPTH || !(await directoryExists(root))) {
     return;
   }
-  if (await hasWorkflowSignal(root)) {
+  if (await hasWorkflowSignal(root) || await hasProjectSignal(root)) {
     projects.add(root);
     return;
   }
@@ -97,15 +124,27 @@ async function buildProjectSummary(projectPath, capabilities) {
   const manifest = await readJson(manifestPath);
   const configContent = await readText(configPath);
   const markers = configContent ? parseConfigMarkers(configContent) : { tier: null, version: null };
-  const openspec = await readOpenSpecStats(projectPath);
+  const installed = Boolean(manifest);
+  const partial = !manifest && Boolean(markers.version);
+  const openspec = installed || partial
+    ? await readOpenSpecStats(projectPath)
+    : {
+      available: false,
+      activeCount: 0,
+      completedTasks: 0,
+      totalTasks: 0,
+      latestModified: null,
+      error: null
+    };
 
   return {
     id: Buffer.from(projectPath).toString('base64url'),
     name: path.basename(projectPath),
     path: projectPath,
-    installed: Boolean(manifest),
-    partial: !manifest && Boolean(markers.version),
-    tier: manifest?.tier ?? markers.tier ?? 'unknown',
+    installed,
+    partial,
+    installable: !installed && !partial,
+    tier: manifest?.tier ?? markers.tier ?? '未安装',
     workflowVersion: manifest?.workflowVersion ?? markers.version ?? 'unknown',
     hosts: manifest?.hosts ?? { claude: false, codex: false },
     sourceRepo: manifest?.sourceRepo ?? '',
@@ -113,6 +152,7 @@ async function buildProjectSummary(projectPath, capabilities) {
     manifest,
     config: markers,
     capabilities,
+    strategy: buildProjectStrategy(manifest?.tier ?? markers.tier ?? 'unknown', configContent),
     openspec,
     doctor: null
   };

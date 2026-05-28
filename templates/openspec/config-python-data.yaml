@@ -26,6 +26,26 @@ quick_change_criteria: |
   不适用：任何涉及数据流变更、新接口、外部调用、配置处理的改动。
   不适用：任何涉及 SQL 查询、聚合逻辑、报表指标或数据口径的改动。
 
+risk_triggers:
+  spec_change:
+    when: 新功能、行为变化、接口变化、项目可见能力变化。
+    capabilities: [openspec-propose, openspec-apply-change, openspec-archive-change]
+  architecture:
+    when: 跨模块、数据流、边界调整、核心抽象变化。
+    capabilities: [/plan-eng-review]
+  data_metric:
+    when: SQL、聚合逻辑、指标口径、报表下游影响或时间边界。
+    capabilities: [data-metric-review]
+  security:
+    when: 凭证、权限、认证鉴权、外部 API、部署配置或敏感数据处理。
+    capabilities: [/cso]
+  test_driven:
+    when: 新行为、核心逻辑、修 bug 防回归或需要先约束行为。
+    capabilities: [superpowers:test-driven-development]
+  final_verification:
+    when: 所有实现型任务在声明完成前都需要验证。
+    capabilities: [superpowers:verification-before-completion]
+
 rules:
   proposal:
     - 提案控制在 600 字以内。

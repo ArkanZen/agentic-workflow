@@ -8,6 +8,17 @@ description: |
 
 工作流档位安装与切换。
 
+## 用户决策原则
+
+`wf-install` 只负责检测、推荐、预览和执行用户确认过的动作。不得因为检测结果“明显”就自动选择模式、档位或直接执行安装脚本。
+
+必须遵守：
+
+- 状态检测完成后，先展示当前状态、推荐动作和可选动作，让用户选择 INSTALL / SWITCH / UPGRADE / 取消。
+- 档位推荐只能作为建议；最终档位必须由用户选择或确认。
+- 执行任何写入前，必须展示命令、目标目录、档位、变更文件范围和风险提示，并等待用户确认。
+- 如果用户选择与推荐不同的模式或档位，按用户选择执行，不反复劝阻；只在明显危险时提示影响。
+
 ## 强制依赖清单
 
 `wf-install` 不依赖外部 Superpowers 或 GStack skill，但必须执行安装脚本和版本检测命令，不得只给出安装建议。
@@ -39,11 +50,11 @@ conditional_commands:
 开始执行时必须先展示或内部完成以下自检，并在首条进展中说明依赖状态：
 
 - 当前工作流：`wf-install`
-- 当前模式：待检测 / INSTALL / SWITCH / UPGRADE
+- 当前模式：待检测 / 用户待选择 / INSTALL / SWITCH / UPGRADE
 - 必须执行的命令：版本检测、manifest 读取、安装脚本执行或档位切换命令
 - 预期变更范围：`openspec/config.yaml`、`AGENTS.md`、`.codex/skills/wf-*`、可选 `.claude/commands/wf-*`
 
-## 第一步：检测当前状态，路由到对应模式
+## 第一步：检测当前状态，生成建议但不自动执行
 
 运行 shell 命令检查 `openspec/config.yaml` 是否存在，并读取版本标记和 manifest：
 
@@ -53,22 +64,43 @@ grep "agentic-workflow-version:" openspec/config.yaml 2>/dev/null || echo "NO_VE
 cat .agentic-workflow/manifest.json 2>/dev/null || echo "NO_MANIFEST"
 ```
 
-路由规则：
-- 若文件**不存在** → 进入 **INSTALL 模式**
-- 若文件**存在** AND **不含**工作流版本注释 → 进入 **UPGRADE 模式**（版本未知）
+建议规则：
+- 若文件**不存在** → 推荐 **INSTALL 模式**
+- 若文件**存在** AND **不含**工作流版本注释 → 推荐 **UPGRADE 模式**（版本未知）
 - 若文件**存在** AND 含工作流版本注释：
   1. 读取 manifest.json 中的 `sourceRepo` 和 `workflowVersion`。
   2. **若 `sourceRepo` 非空**（远程模式）：
      - 运行 `git ls-remote --tags --refs "<sourceRepo>" 'v[0-9]*' 2>/dev/null | awk '{print $2}' | sed 's|refs/tags/||' | sort -V | tail -1` 获取最新 tag
      - 成功且有 tag：去掉 `v` 前缀后与 `workflowVersion` 比较
-       - 最新版本 > 已安装版本 → 进入 **UPGRADE 模式（远程）**
-       - 最新版本 = 已安装版本 → 进入 **SWITCH 模式**
+       - 最新版本 > 已安装版本 → 推荐 **UPGRADE 模式（远程）**
+       - 最新版本 = 已安装版本 → 推荐 **SWITCH 模式**
      - 成功但无 tag：用 UI 工具提示「GitHub 仓库暂无 release tag，无法远程检测」，降级本地路径模式
      - 命令失败：用 UI 工具提示「远程版本检测失败」，降级本地路径模式
   3. **若 `sourceRepo` 为空**（本地模式，向后兼容）：
      - 询问或确认 agentic-workflow 仓库路径（用 UI 交互工具）
      - 读取 `<agentic-workflow-path>/VERSION`，与 `workflowVersion` 比较
-     - 低于仓库版本 → **UPGRADE 模式（本地）**；相等 → **SWITCH 模式**；高于 → UI 提示并询问
+     - 低于仓库版本 → 推荐 **UPGRADE 模式（本地）**；相等 → 推荐 **SWITCH 模式**；高于 → UI 提示并询问
+
+检测完成后必须展示选择面板，不得直接进入某个模式：
+
+```
+检测完成。
+
+当前状态：<未安装 / 已安装 / 版本未知 / 有新版本>
+当前档位：<tier-or-unknown>
+当前版本：<version-or-unknown>
+推荐动作：<INSTALL / SWITCH / UPGRADE>，原因：<简要说明>
+
+请选择下一步：
+1. 按推荐动作继续（<recommended-mode>）
+2. 全新安装 / 重新安装（INSTALL）
+3. 切换档位（SWITCH）
+4. 升级模板（UPGRADE）
+5. 只查看状态，不修改文件
+6. 取消
+```
+
+用户选择后才进入对应模式。若用户选择“只查看状态”，输出检测摘要和建议，不执行写入。
 
 > Codex 注意：使用 shell 工具执行命令；读取文件用文件读取工具；向用户提问用 AskUserQuestion 或等价的交互工具。
 
@@ -95,7 +127,18 @@ cat .agentic-workflow/manifest.json 2>/dev/null || echo "NO_MANIFEST"
 3. 取消
 ```
 
-若用户选择「更新本地仓库并升级」：
+若用户选择「更新本地仓库并升级」，必须先展示最终执行预览：
+
+```
+即将执行：
+git -C "<workflowPath>" pull --ff-only
+bash "<workflowPath>/install.sh" --type <tier> --target <current-dir> --no-interactive --upgrade
+
+将更新：openspec/config.yaml、AGENTS.md、.codex/skills/wf-*、可选 .claude/commands/wf-*
+请选择：确认执行 / 返回选择 / 取消
+```
+
+用户确认后：
 - 若 `workflowPath` 有效：
   ```bash
   git -C "<workflowPath>" pull --ff-only
@@ -116,7 +159,7 @@ cat .agentic-workflow/manifest.json 2>/dev/null || echo "NO_MANIFEST"
 3. 取消
 ```
 
-若用户选择「升级配置」：
+若用户选择「升级配置」，必须先展示最终执行预览并等待确认：
 - 用 AskUserQuestion 询问 agentic-workflow 仓库路径，然后执行：
   ```bash
   bash "<agentic-workflow-path>/install.sh" --type <detected-or-asked-tier> --target <current-dir> --no-interactive --upgrade
@@ -190,9 +233,9 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 
 若最高权重档位得分 ≥ 5，置信度 ≥ 80%；得分 3–4，置信度约 60%；得分 1–2，置信度约 40%。无任何强信号时，vibe 作为兜底候选（置信度 30%）。
 
-### 步骤 3：展示推荐结果，请用户确认
+### 步骤 3：展示推荐结果，让用户选择档位
 
-用 AskUserQuestion（或等价 UI 交互工具）展示所有置信度 > 0 的候选档位，按置信度降序排列（★ 标记仅用于顶级推荐）：
+用 AskUserQuestion（或等价 UI 交互工具）展示所有 5 个档位。推荐档位排在第一位并标注“推荐”，但用户必须显式选择最终档位：
 
 ```
 检测完成，以下是档位推荐（按置信度排序）：
@@ -202,23 +245,22 @@ Python 项目（含 `requirements.txt` 或 `pyproject.toml`）如果同时有 `t
 
 检测依据：[简要说明触发了哪些信号，如「requirements.txt 含 pandas、sqlalchemy」]
 
-请选择：
-1. 接受推荐（python-data）
-2. 查看全部 5 个档位
-3. 取消
+请选择最终安装档位：
+1. python-data（推荐，置信度 85%）— Python 数据项目
+2. backend — 后端服务
+3. frontend — 前端应用
+4. fullstack — 前后端合体
+5. vibe — 轻量快速模式
+6. 取消
 ```
-
-若用户选择"查看全部 5 个档位"，展示完整列表（同 SWITCH 模式步骤 4）。
 
 ### 步骤 4：执行安装
 
-确认档位后，用 AskUserQuestion（或等价 UI 交互工具）询问 agentic-workflow 仓库路径（若用户未提供）：
+确认档位后，用 AskUserQuestion（或等价 UI 交互工具）询问 agentic-workflow 仓库路径（若用户未提供）。执行前必须展示最终预览：
 
 ```
 请输入 agentic-workflow 仓库的本地路径（例如：~/workspace/agentic-workflow）：
 ```
-
-然后执行安装：
 
 在执行前验证路径：test -f "<agentic-workflow-path>/install.sh"
 若文件不存在，告知用户「路径无效，未找到 install.sh」，重新询问路径。
@@ -229,6 +271,19 @@ bash "<agentic-workflow-path>/install.sh" --type <tier> --target <current-dir> -
 ```
 
 其中 `<current-dir>` 为当前工作目录的绝对路径，用 `pwd` 获取。
+展示：
+
+```
+即将安装：
+目标项目：<current-dir>
+选择档位：<tier>
+执行命令：bash "<agentic-workflow-path>/install.sh" --type <tier> --target <current-dir> --no-interactive
+将写入：openspec/config.yaml、AGENTS.md、.agentic-workflow/manifest.json、.codex/skills/wf-*、可选 .claude/commands/wf-*
+
+请选择：确认安装 / 返回选择档位 / 取消
+```
+
+用户确认后执行安装。
 
 安装完成后输出：
 ```
@@ -299,7 +354,21 @@ B. 取消（先归档再切换）
 
 ### 步骤 5：替换 config.yaml
 
-用户选择目标档位后：
+用户选择目标档位后，必须先展示最终预览：
+
+```
+即将切换档位：
+目标项目：<current-dir>
+当前档位：<current-tier-name>
+目标档位：<tier>
+执行命令：bash "<agentic-workflow-path>/install.sh" --switch --type <tier> --target <current-dir> --no-interactive
+将备份：openspec/config.yaml -> openspec/config.yaml.bak
+将更新：openspec/config.yaml、.agentic-workflow/manifest.json
+
+请选择：确认切换 / 返回选择档位 / 取消
+```
+
+用户确认后：
 
 1. 执行安装脚本的 switch 模式，由脚本备份当前配置并渲染 VERSION 占位符：
    ```bash

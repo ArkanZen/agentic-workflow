@@ -17,9 +17,19 @@ description: |
 required_reviews:
   engineering_assessment:
     - /gstack-plan-eng-review
+conditional_reviews:
+  product_assessment:
+    - /gstack-plan-ceo-review
+    - /gstack-office-hours
 ```
 
 若宿主环境没有 `/gstack-plan-eng-review`，必须先明确说明缺失项和影响，再等待用户确认是否降级为普通方案讨论；不得声称已完成 GStack 审查。
+
+## Host 命令映射
+
+- Codex App：工程审查使用 `/gstack-plan-eng-review`；产品取舍可使用 `/gstack-plan-ceo-review` 或 `/gstack-office-hours`。
+- Claude CLI：工程审查使用 `/plan-eng-review`；产品取舍可使用 `/plan-ceo-review` 或 `/office-hours`。
+- 产品审查不可用时，可以明确降级为普通产品分析；工程审查不可用时，必须等待用户确认后才可降级继续。
 
 ## Codex App 交互规则
 
@@ -33,21 +43,22 @@ required_reviews:
 
 - 当前工作流：`wf-plan`
 - 必须执行的审查：`/gstack-plan-eng-review`
+- 可选产品审查：`/gstack-plan-ceo-review` 或 `/gstack-office-hours`（可用时优先用于价值、范围和取舍判断）
 - 已加载状态：已可用 / 未加载并说明降级原因
 - 下一步：工程可行性审查
 
 执行以下步骤：
-1. 执行 `/gstack-plan-eng-review` 从工程视角评估可行性、复杂度和风险；不得用普通分析替代。
-2. 从产品视角梳理：值得做？用户价值？替代方案？更小路径？
-3. 完成后询问：「决定做了吗？用 /wf-small 还是 /wf-complex 继续？」
+1. 先从产品视角梳理：值得做？用户价值？替代方案？更小路径？
+2. 若 `/gstack-plan-ceo-review` 或 `/gstack-office-hours` 可用，执行其中一个补充产品取舍审查；不可用时说明降级原因。
+3. 执行 `/gstack-plan-eng-review` 从工程视角评估可行性、复杂度和风险；不得用普通分析替代。
+4. 对照 `risk_triggers` 输出建议路径：不做 / `/wf-quick` / `/wf-small` / `/wf-complex` / `/wf-debug`。
+5. 完成后询问：「决定做了吗？用哪个 workflow 继续？」
 
 ## 收尾审计
 
 完成前必须输出执行审计：
 
 - `wf-plan`：已执行
+- 产品审查：列出执行的产品审查能力或降级原因
 - GStack 审查：列出 `/gstack-plan-eng-review` 状态或降级原因
 - 推荐路径：列出推荐进入 `/wf-small`、`/wf-complex` 或暂不实现的理由
-
-注意：Codex 侧用 /gstack-plan-eng-review 替代 GStack 原生 /office-hours。
-如需完整 office-hours 体验，切换到 Claude Code 执行。

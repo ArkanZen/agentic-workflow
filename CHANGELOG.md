@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.0 - 2026-05-27
+
+- 新增本地 Dashboard MVP：用 Node Web UI 查看本机项目、工作流档位、OpenSpec 统计、doctor 结果、工作流策略和工具能力。
+- Dashboard 支持自定义扫描目录，能识别已安装、部分配置和普通可安装项目；安装、升级和切档成功后会自动刷新项目列表。
+- 新增 Dashboard 安装向导：先检测目标项目，再由用户选择 install / upgrade / switch-tier / status-only，执行前展示写入文件、目标档位、宿主和版本影响。
+- 工具能力页按 OpenSpec、GStack、Superpowers 分组，展示版本检测、AI 宿主支持、官方技能手册、工作流引用、项目启用和本机可用状态，并支持搜索过滤。
+- 工作流配置新增 `risk_triggers`，Dashboard 工作流策略页会优先读取项目真实配置，缺失时才回退到档位预设。
+- `/wf-install` 改为用户决策优先：AI 只做检测和推荐，写入前必须展示选择面板和预览。
+- `/wf-small` 风险判断改为轻量表格，降低工作流启动阶段的 token 消耗。
+- doctor 默认把 `.DS_Store` 作为本地系统文件忽略，不再产生警告；需要查看路径时可设置 `VERBOSE_DS_STORE=1`。
+
 ## 1.1.10 - 2026-05-22
 
 - 补齐所有 OpenSpec 档位模板中的文件命名规范和路径展示规则，确保新安装项目也能继承中文工件命名与绝对路径输出要求。

@@ -33,10 +33,11 @@ afterEach(async () => {
 });
 
 describe('discoverProjects', () => {
-  it('发现 manifest 安装项目和 config 部分配置项目', async () => {
+  it('发现 manifest 安装项目、config 部分配置项目和普通可安装项目', async () => {
     const root = await createTempRoot();
     const installed = path.join(root, 'installed-app');
     const partial = path.join(root, 'partial-app');
+    const installable = path.join(root, 'installable-app');
 
     await writeJson(path.join(installed, '.agentic-workflow/manifest.json'), {
       workflowVersion: '1.0.0',
@@ -47,14 +48,29 @@ describe('discoverProjects', () => {
     await fs.mkdir(path.join(partial, 'openspec'), { recursive: true });
     await fs.writeFile(path.join(partial, 'openspec/config.yaml'), [
       '# agentic-workflow-tier: vibe',
-      '# agentic-workflow-version: 1.0.1'
+      '# agentic-workflow-version: 1.0.1',
+      'risk_triggers:',
+      '  spec_change:',
+      '  ui:',
+      '  final_verification:'
     ].join('\n'));
+    await writeJson(path.join(installable, 'package.json'), {
+      dependencies: {
+        react: '19.0.0'
+      }
+    });
 
     const result = await discoverProjects([root]);
     const names = result.projects.map((project) => project.name).sort();
 
-    expect(names).toEqual(['installed-app', 'partial-app']);
+    expect(names).toEqual(['installable-app', 'installed-app', 'partial-app']);
     expect(result.projects.find((project) => project.name === 'installed-app').installed).toBe(true);
     expect(result.projects.find((project) => project.name === 'partial-app').partial).toBe(true);
+    expect(result.projects.find((project) => project.name === 'installable-app').installable).toBe(true);
+    expect(result.projects.find((project) => project.name === 'installable-app').tier).toBe('未安装');
+    expect(result.projects.find((project) => project.name === 'installed-app').strategy.tier.id).toBe('backend');
+    expect(result.projects.find((project) => project.name === 'installed-app').strategy.enabledCapabilities).toContain('/plan-eng-review');
+    expect(result.projects.find((project) => project.name === 'partial-app').strategy.source).toBe('config');
+    expect(result.projects.find((project) => project.name === 'partial-app').strategy.enabledCapabilities).toContain('/plan-design-review');
   });
 });

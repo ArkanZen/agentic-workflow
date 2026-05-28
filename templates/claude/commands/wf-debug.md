@@ -13,4 +13,4 @@ Debug / 重构 / 单测通道。
 - 补单测 / TDD 新功能：调用 superpowers:test-driven-development，先写测试，再实现并验证
 - 纯重构：调用 superpowers:brainstorming 确认重构边界，再直接实现
 
-完成后询问：「是否需要用 /wf-quick 记录这次修改的结论？」
+完成后询问：「是否需要用 /wf-quick 记录这次修改的结论？」若本次修复涉及行为变化、接口变化或安全/数据口径风险，应推荐改用 /wf-small 记录完整 OpenSpec change。

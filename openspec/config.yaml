@@ -1,7 +1,7 @@
 schema: spec-driven
 # vibe 模式 — 轻量快速，适合个人项目、原型验证，无 design gate
 # agentic-workflow-tier: vibe
-# agentic-workflow-version: 1.1.10
+# agentic-workflow-version: 1.2.0
 
 context: |
   完整项目上下文见 openspec/specs/project.md。
@@ -18,6 +18,17 @@ context: |
 
 # vibe 模式下所有变更均走快速通道，无需经过 design gate
 quick_change_criteria: 所有变更均可走快速通道（vibe 模式）
+
+risk_triggers:
+  spec_change:
+    when: 新功能、行为变化、接口变化、项目可见能力变化。
+    capabilities: [openspec-propose, openspec-apply-change, openspec-archive-change]
+  security:
+    when: 凭证、权限、认证鉴权、外部 API、部署配置或敏感数据处理。
+    capabilities: [/cso]
+  final_verification:
+    when: 所有实现型任务在声明完成前都需要验证。
+    capabilities: [superpowers:verification-before-completion]
 
 rules:
   proposal:

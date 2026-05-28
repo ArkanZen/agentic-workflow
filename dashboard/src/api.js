@@ -44,6 +44,18 @@ export function runDoctor(projectPath, roots) {
 }
 
 /**
+ * 检测目标项目是否适合安装、升级或切换工作流。
+ * @param {object} payload 检测请求。
+ * @returns {Promise<object>} 检测结果。
+ */
+export function detectInstall(payload) {
+  return requestJson('/api/install/detect', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+/**
  * 预览受控维护动作。
  * @param {object} payload 动作请求。
  * @returns {Promise<object>} 动作摘要。

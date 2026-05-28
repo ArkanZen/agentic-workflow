@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { DEFAULT_SCAN_ROOTS, isInsideScanRoots, normalizePath, normalizeScanRoots } from './lib/paths.js';
 import { discoverProjects } from './lib/scanner.js';
 import { runDoctor } from './lib/doctor.js';
-import { buildWorkflowAction, runWorkflowAction } from './lib/actions.js';
+import { buildWorkflowActionPreview, detectWorkflowInstall, runWorkflowAction } from './lib/actions.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,19 +69,26 @@ app.post('/api/doctor', async (request, response) => {
   }
 });
 
-app.post('/api/actions/preview', (request, response) => {
+app.post('/api/install/detect', async (request, response) => {
   try {
     const roots = normalizeScanRoots(request.body.roots ?? DEFAULT_SCAN_ROOTS);
     const projectPath = assertProjectInScanRoots(request.body.projectPath, roots);
-    const action = buildWorkflowAction({
+    response.json(await detectWorkflowInstall(projectPath));
+  } catch (error) {
+    response.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/actions/preview', async (request, response) => {
+  try {
+    const roots = normalizeScanRoots(request.body.roots ?? DEFAULT_SCAN_ROOTS);
+    const projectPath = assertProjectInScanRoots(request.body.projectPath, roots);
+    const preview = await buildWorkflowActionPreview({
       action: request.body.action,
       projectPath,
       tier: request.body.tier
     });
-    response.json({
-      summary: action.summary,
-      command: [action.command, ...action.args].join(' ')
-    });
+    response.json(preview);
   } catch (error) {
     response.status(400).json({ error: error.message });
   }

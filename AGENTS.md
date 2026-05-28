@@ -5,7 +5,7 @@
 <!-- agentic-workflow:start -->
 ## OpenSpec + GStack 工作流
 <!-- agentic-workflow-tier: vibe -->
-<!-- agentic-workflow-version: 1.1.10 -->
+<!-- agentic-workflow-version: 1.2.0 -->
 
 默认不启用本工作流。仅当用户显式输入 `/wf-*` 或 `/openspec-*` 命令时，才进入 OpenSpec + GStack 流程；普通开发请求按项目常规协作方式处理。
 

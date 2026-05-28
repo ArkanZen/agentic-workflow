@@ -144,6 +144,95 @@ check_version_source() {
   fi
 }
 
+check_config_risk_triggers() {
+  local file name missing
+  for file in "$script_dir"/templates/openspec/config-*.yaml; do
+    name="$(basename "$file")"
+    missing=()
+    grep -q "^risk_triggers:" "$file" 2>/dev/null || missing+=("risk_triggers")
+    grep -q "spec_change:" "$file" 2>/dev/null || missing+=("spec_change")
+    grep -q "final_verification:" "$file" 2>/dev/null || missing+=("final_verification")
+    case "$name" in
+      config-vibe.yaml)
+        grep -q "security:" "$file" 2>/dev/null || missing+=("security")
+        ;;
+      config-frontend.yaml)
+        grep -q "ui:" "$file" 2>/dev/null || missing+=("ui")
+        grep -q "browser_qa:" "$file" 2>/dev/null || missing+=("browser_qa")
+        ;;
+      config-backend.yaml)
+        grep -q "architecture:" "$file" 2>/dev/null || missing+=("architecture")
+        grep -q "security:" "$file" 2>/dev/null || missing+=("security")
+        grep -q "code_review:" "$file" 2>/dev/null || missing+=("code_review")
+        ;;
+      config-fullstack.yaml)
+        grep -q "architecture:" "$file" 2>/dev/null || missing+=("architecture")
+        grep -q "ui:" "$file" 2>/dev/null || missing+=("ui")
+        grep -q "security:" "$file" 2>/dev/null || missing+=("security")
+        grep -q "browser_qa:" "$file" 2>/dev/null || missing+=("browser_qa")
+        ;;
+      config-python-data.yaml)
+        grep -q "data_metric:" "$file" 2>/dev/null || missing+=("data_metric")
+        grep -q "security:" "$file" 2>/dev/null || missing+=("security")
+        ;;
+    esac
+    if [[ "${#missing[@]}" -eq 0 ]]; then
+      ok "$name 风险触发规则完整"
+    else
+      fail "$name 风险触发规则缺失：${missing[*]}"
+    fi
+  done
+
+  if [[ -f "$target_dir/openspec/config.yaml" ]]; then
+    if grep -q "^risk_triggers:" "$target_dir/openspec/config.yaml" 2>/dev/null; then
+      ok "目标项目包含 risk_triggers 风险触发规则"
+    else
+      warn "目标项目缺少 risk_triggers；建议运行升级或切档同步新模板"
+    fi
+  fi
+}
+
+check_workflow_strategy_docs() {
+  local missing=()
+  grep -q "高风险逃逸检查" "$script_dir/templates/codex/skills/wf-quick/SKILL.md" 2>/dev/null || missing+=("wf-quick 高风险逃逸检查")
+  grep -q "risk_triggers" "$script_dir/templates/codex/skills/wf-small/SKILL.md" 2>/dev/null || missing+=("wf-small risk_triggers")
+  grep -q "/gstack-review" "$script_dir/templates/codex/skills/wf-complex/SKILL.md" 2>/dev/null || missing+=("wf-complex 实现后 review")
+  grep -q "/gstack-plan-ceo-review" "$script_dir/templates/codex/skills/wf-plan/SKILL.md" 2>/dev/null || missing+=("wf-plan 产品审查")
+  grep -q "安全/数据口径风险" "$script_dir/templates/codex/skills/wf-debug/SKILL.md" 2>/dev/null || missing+=("wf-debug 记录升级建议")
+  if [[ "${#missing[@]}" -eq 0 ]]; then
+    ok "Codex 工作流策略文档完整"
+  else
+    fail "Codex 工作流策略文档缺失：${missing[*]}"
+  fi
+
+  missing=()
+  grep -q "高风险逃逸检查" "$script_dir/templates/claude/commands/wf-quick.md" 2>/dev/null || missing+=("wf-quick 高风险逃逸检查")
+  grep -q "risk_triggers" "$script_dir/templates/claude/commands/wf-small.md" 2>/dev/null || missing+=("wf-small risk_triggers")
+  grep -q "/review" "$script_dir/templates/claude/commands/wf-complex.md" 2>/dev/null || missing+=("wf-complex 实现后 review")
+  grep -q "/plan-ceo-review" "$script_dir/templates/claude/commands/wf-plan.md" 2>/dev/null || missing+=("wf-plan 产品审查")
+  grep -q "安全/数据口径风险" "$script_dir/templates/claude/commands/wf-debug.md" 2>/dev/null || missing+=("wf-debug 记录升级建议")
+  if [[ "${#missing[@]}" -eq 0 ]]; then
+    ok "Claude 工作流策略文档完整"
+  else
+    fail "Claude 工作流策略文档缺失：${missing[*]}"
+  fi
+}
+
+check_install_user_choice_guard() {
+  local missing=()
+  grep -q "用户决策原则" "$script_dir/templates/codex/skills/wf-install/SKILL.md" 2>/dev/null || missing+=("Codex 用户决策原则")
+  grep -q "检测完成后必须展示选择面板" "$script_dir/templates/codex/skills/wf-install/SKILL.md" 2>/dev/null || missing+=("Codex 模式选择面板")
+  grep -q "执行任何写入前" "$script_dir/templates/codex/skills/wf-install/SKILL.md" 2>/dev/null || missing+=("Codex 写入前确认")
+  grep -q "用户决策原则" "$script_dir/templates/claude/commands/wf-install.md" 2>/dev/null || missing+=("Claude 用户决策原则")
+  grep -q "检测完成后必须展示选择面板" "$script_dir/templates/claude/commands/wf-install.md" 2>/dev/null || missing+=("Claude 模式选择面板")
+  grep -q "执行任何写入前" "$script_dir/templates/claude/commands/wf-install.md" 2>/dev/null || missing+=("Claude 写入前确认")
+  if [[ "${#missing[@]}" -eq 0 ]]; then
+    ok "wf-install 用户选择守卫完整"
+  else
+    fail "wf-install 用户选择守卫缺失：${missing[*]}"
+  fi
+}
+
 check_dangling_workflow_references() {
   local forbidden_count pattern
   pattern="openspec-sync-specs|openspec-continue-change|/opsx:continue|opsx:continue"
@@ -204,6 +293,11 @@ compare_claude_wf_commands
 step "Codex 依赖守卫"
 check_codex_dependency_guards
 
+step "风险触发规则"
+check_config_risk_triggers
+check_workflow_strategy_docs
+check_install_user_choice_guard
+
 step "版本源"
 check_version_source
 
@@ -249,7 +343,9 @@ if [[ "$ds_count" == "0" ]]; then
   ok "未发现 .DS_Store"
 else
   info "发现 $ds_count 个 .DS_Store，已按本地系统文件忽略"
-  printf '%s\n' "$ds_files" | sed '/^$/d' | sed 's/^/    - /'
+  if [[ "${VERBOSE_DS_STORE:-0}" == "1" || "${AW_VERBOSE_DS_STORE:-0}" == "1" ]]; then
+    printf '%s\n' "$ds_files" | sed '/^$/d' | sed 's/^/    - /'
+  fi
 fi
 
 step "摘要"

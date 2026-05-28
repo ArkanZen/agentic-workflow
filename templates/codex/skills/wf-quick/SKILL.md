@@ -51,25 +51,27 @@ conditional_skills:
 
 若符合，执行以下步骤：
 0. 若任务是明确 bug，先加载并执行 `superpowers:systematic-debugging`，完成根因确认后再继续。
-1. 从用户输入派生 kebab-case 变更名（加 `quick-` 前缀，例如 `quick-fix-date-format`）
-2. 运行 `openspec new change "<name>"`
-3. 运行 `openspec instructions proposal --change "<name>" --json`，生成 proposal.md
-4. 跳过 design.md（快速通道不生成此工件，不运行任何 gate）
-5. 运行 `openspec instructions tasks --change "<name>" --json`，生成 tasks.md
-6. 生成完成后必须展示：
+1. 对照 `openspec/config.yaml` 的 `risk_triggers` 做高风险逃逸检查：命中架构、UI、安全、数据口径、跨层、外部调用、部署配置任一风险时，停止 quick 并推荐 `/wf-small` 或 `/wf-complex`。
+2. 从用户输入派生 kebab-case 变更名（加 `quick-` 前缀，例如 `quick-fix-date-format`）
+3. 运行 `openspec new change "<name>"`
+4. 运行 `openspec instructions proposal --change "<name>" --json`，生成 proposal.md
+5. 跳过 design.md（快速通道不生成此工件，不运行任何 gate）
+6. 运行 `openspec instructions tasks --change "<name>" --json`，生成 tasks.md
+7. 生成完成后必须展示：
    - quick_change_criteria 判定结论
+   - risk_triggers 逃逸检查结论
    - proposal.md / tasks.md 的绝对路径链接
    - tasks.md 中的 checkbox 清单摘要
-7. 使用 UI 交互询问用户是否确认按这些 tasks 直接实现：
+8. 使用 UI 交互询问用户是否确认按这些 tasks 直接实现：
    - 选项 A：确认实现（推荐）
    - 选项 B：修改 tasks/proposal
    - 选项 C：取消
    用户确认前，不得执行 /openspec-apply-change。
-8. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
-9. 实现完成后优先加载 `superpowers:verification-before-completion`，运行最小必要验证，并在结果中说明已验证项。
-10. 验证通过后同步 `tasks.md`：将已确认完成的任务从 `- [ ]` 勾选为 `- [x]`；若存在无法确认完成的任务，先告知用户并保留未勾选状态。
-11. 询问用户是否归档；用户确认后再执行 `/openspec-archive-change`。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑；若第 10 步已确认全部任务完成，归档不应因任务未勾选再次打断。
-12. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
+9. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
+10. 实现完成后优先加载 `superpowers:verification-before-completion`，运行最小必要验证，并在结果中说明已验证项。
+11. 验证通过后同步 `tasks.md`：将已确认完成的任务从 `- [ ]` 勾选为 `- [x]`；若存在无法确认完成的任务，先告知用户并保留未勾选状态。
+12. 询问用户是否归档；用户确认后再执行 `/openspec-archive-change`。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑；若第 11 步已确认全部任务完成，归档不应因任务未勾选再次打断。
+13. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
 
 ## 收尾审计
 
@@ -77,6 +79,7 @@ conditional_skills:
 
 - `wf-quick`：已执行
 - quick_change_criteria：列出判定结论
+- risk_triggers：列出逃逸检查结论；若升级为其他 workflow，说明原因
 - OpenSpec workflow：列出 `apply`、`archive` 的执行状态
 - 条件 skill：列出 `systematic-debugging`、`verification-before-completion` 已加载 / 不适用 / 降级原因
 - 验证：列出实际运行的命令和结果

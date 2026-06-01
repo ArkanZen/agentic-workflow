@@ -3,10 +3,16 @@ name: wf-quick
 description: |
   快速通道：文案、样式、明确 bug，跳过 gate，直接生成 proposal + tasks。
   适用于 ≤3 文件、无架构/安全影响、意图无歧义的小改动。
-  仅当用户显式输入 /wf-quick 时使用；不要因“快速通道、快速修复、quick fix、小改动”等自然语言自动触发。
+  仅当用户显式输入 /wf-quick 时使用；不要因"快速通道、快速修复、quick fix、小改动"等自然语言自动触发。
 ---
 
 快速通道变更。
+
+## 状态行规则
+
+在本工作流执行期间，每次回复开头输出一行：
+`> wf-quick · <change-name> · 步骤 N/13`
+change-name 在步骤 2 确定后填入，此前用 `…` 占位；N 为当前正在执行的步骤编号。
 
 ## 强制依赖清单
 
@@ -31,7 +37,6 @@ conditional_skills:
 
 - 有选项的地方，优先使用 Codex App 提供的 UI 交互工具（如 `request_user_input` 或当前宿主暴露的等价工具）。
 - 只有 UI 交互工具不可用时，才退化为文本选项；文本选项必须短且明确。
-- quick 虽然跳过 design gate，但 proposal/tasks 生成后仍必须暂停展示并等待确认。
 - 所有本地文件链接必须使用绝对路径，方便 Codex App 直接打开。
 
 ## 启动自检
@@ -54,25 +59,35 @@ conditional_skills:
 1. 对照 `openspec/config.yaml` 的 `risk_triggers` 做高风险逃逸检查：命中架构、UI、安全、数据口径、跨层、外部调用、部署配置任一风险时，停止 quick 并推荐 `/wf-small` 或 `/wf-complex`。
 2. 从用户输入派生 kebab-case 变更名（加 `quick-` 前缀，例如 `quick-fix-date-format`）
 3. 运行 `openspec new change "<name>"`
+   完成后写入 `.wf-active`（确保 git-ignored）：
+   ```bash
+   echo '{"workflow":"wf-quick","change":"<name>","started":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > .wf-active
+   grep -q "\.wf-active" .gitignore 2>/dev/null || echo ".wf-active" >> .gitignore
+   ```
 4. 运行 `openspec instructions proposal --change "<name>" --json`，生成 proposal.md
-   提示：先运行 `git diff --stat`，把变更文件列表粘贴到 proposal 背景一栏可节省时间。
 5. 跳过 design.md（快速通道不生成此工件，不运行任何 gate）
-6. 运行 `openspec instructions tasks --change "<name>" --json`，生成 tasks.md
-7. 生成完成后必须展示：
+6. 任务上下文收集（生成 tasks 前执行）：
+   运行 `git diff --stat HEAD` 获取最近修改的文件列表；
+   从 proposal 变更描述中提取 2-3 个关键词，grep 找到相关源文件路径。
+   生成 tasks.md 时，每个任务须引用具体文件路径（若能确定），避免泛化描述。
+7. 运行 `openspec instructions tasks --change "<name>" --json`，生成 tasks.md；不得绕过该 workflow 直接实现。
+8. 展示以下内容：
    - quick_change_criteria 判定结论
    - risk_triggers 逃逸检查结论
    - proposal.md / tasks.md 的绝对路径链接
    - tasks.md 中的 checkbox 清单摘要
-8. 使用 UI 交互询问用户是否确认按这些 tasks 直接实现：
-   - 选项 A：确认实现（推荐）
-   - 选项 B：修改 tasks/proposal
-   - 选项 C：取消
-   用户确认前，不得执行 /openspec-apply-change。
-9. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
+   然后说明：「tasks 已就绪，准备实现。如无异议请告知继续；需要修改请说明。」
+   等待用户回复：肯定性回复 → 进入步骤 9；提出修改 → 按要求调整后重回步骤 8；取消 → 停止，保留 `.wf-active` 供后续恢复。
+9. 执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
 10. 实现完成后优先加载 `superpowers:verification-before-completion`，运行最小必要验证，并在结果中说明已验证项。
 11. 验证通过后同步 `tasks.md`：将已确认完成的任务从 `- [ ]` 勾选为 `- [x]`；若存在无法确认完成的任务，先告知用户并保留未勾选状态。
-12. 询问用户是否归档；用户确认后再执行 `/openspec-archive-change`。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑；若第 11 步已确认全部任务完成，归档不应因任务未勾选再次打断。
-13. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
+12. 若第 11 步所有任务已完成：说明「准备归档并完成此变更」，直接执行 `/openspec-archive-change`；
+    用户明确说「跳过归档」时保留 active change 不归档。
+    若有未完成任务：使用 UI 交互询问用户是否归档，用户确认后再执行 `/openspec-archive-change`。
+    归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑。
+13. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；
+    最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
+    提交完成后删除 `.wf-active`：`rm -f .wf-active`
 
 ## 收尾审计
 

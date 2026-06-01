@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 - 2026-06-01
+
+- 新增工作流状态感知（A 方案）：所有 wf-* 执行期间每次回复顶部输出状态行 `> wf-[name] · [change] · 步骤 N/M`，用户随时能确认当前所在步骤，支持口头纠偏。
+- 新增 `.wf-active` 状态文件（B 方案）：wf-quick/small/complex 启动时写入，归档提交后删除，自动追加到 `.gitignore`；新增 `/wf-status` 命令读取并展示当前状态，支持恢复或放弃。
+- CLAUDE.md 新增会话启动检测：每次对话开始时检查 `.wf-active`，存在时提示用户有未完成工作流。
+- wf-quick 快速确认优化：proposal/tasks 展示后改为软确认，去掉强制 AskUserQuestion 阻塞，减少 vibe 用户主干路径交互次数。
+- wf-quick/small/complex 归档默认化：所有任务完成时直接说明准备归档并执行；用户说「跳过归档」才保留 active；有未完成任务时保留原有询问流程。
+- wf-quick/small 新增任务上下文注入（P2）：生成 tasks.md 前自动运行 `git diff --stat HEAD` 并 grep 相关源文件，使每个任务引用具体文件路径而非泛化描述。
+- wf-debug 新增诊断前置步骤（P2）：执行 skill 前先完成结构化诊断收集（症状 / 最近 commit / 相关文件 / 错误输出），提升 debug 起点质量。
+
 ## 1.2.0 - 2026-05-27
 
 - 新增本地 Dashboard MVP：用 Node Web UI 查看本机项目、工作流档位、OpenSpec 统计、doctor 结果、工作流策略和工具能力。

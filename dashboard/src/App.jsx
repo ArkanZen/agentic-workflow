@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { detectInstall, fetchProjects, previewAction, runAction, runDoctor } from './api.js';
+import { detectInstall, fetchChanges, fetchProjects, previewAction, runAction, runDoctor } from './api.js';
 
 // 工作流档位选项，用于安装、升级和切换档位动作。
 const TIERS = ['backend', 'python-data', 'frontend', 'fullstack', 'vibe'];
@@ -146,25 +146,33 @@ function CelebrationBanner({ onClose }) {
 
 /**
  * 变更历史页面。
+ * @param {{project: object | null, roots: string[]}} props
  * @returns {JSX.Element}
  */
-function ChangesPage() {
+function ChangesPage({ project, roots }) {
   const [result, setResult] = useState(null);
   const [proposals, setProposals] = useState({});
   const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
-    fetch('/api/changes')
-      .then((r) => r.json())
+    setResult(null);
+    setProposals({});
+    setExpanded({});
+    fetchChanges(project?.path, roots)
       .then(setResult)
       .catch(() => setResult({ available: false, changes: [] }));
-  }, []);
+  }, [project?.path]);
 
   async function toggle(id) {
     const next = !expanded[id];
     setExpanded((e) => ({ ...e, [id]: next }));
     if (next && proposals[id] === undefined) {
-      const res = await fetch(`/api/changes/${id}/proposal`).then((r) => r.json()).catch(() => ({ content: null }));
+      const params = new URLSearchParams();
+      if (project?.path) params.set('projectPath', project.path);
+      if (roots?.length) params.set('roots', roots.join(','));
+      const qs = params.toString();
+      const res = await fetch(`/api/changes/${id}/proposal${qs ? `?${qs}` : ''}`)
+        .then((r) => r.json()).catch(() => ({ content: null }));
       setProposals((p) => ({ ...p, [id]: res.content }));
     }
   }
@@ -207,11 +215,12 @@ function ChangesPage() {
 }
 
 /**
- * 首次使用欢迎横幅。
- * @returns {JSX.Element} 欢迎横幅。
+ * 选中项目暂无变更记录时的引导横幅。
+ * @param {{projectPath: string}} props
+ * @returns {JSX.Element}
  */
-function WelcomeBanner() {
-  const cmd = 'npm --prefix dashboard run dev';
+function WelcomeBanner({ projectPath }) {
+  const cmd = `/wf-quick`;
   const [copied, setCopied] = useState(false);
   function copy() {
     navigator.clipboard.writeText(cmd).then(() => {
@@ -221,8 +230,12 @@ function WelcomeBanner() {
   }
   return (
     <div className="welcome-banner">
-      <h2>欢迎使用 agentic-workflow Dashboard</h2>
-      <p>还没有归档变更。运行 <code>/wf-quick</code> 开始你的第一个变更，完成后归档即可看到记录。</p>
+      <h2>这个项目还没有变更记录</h2>
+      <p>
+        在 <code>{projectPath}</code> 目录中，用 Claude Code 或 Codex 运行
+        <code> /wf-quick</code> 命令开始记录第一个变更。
+        完成并归档后，变更历史会出现在"变更"页面。
+      </p>
       <div className="welcome-banner-cmd">
         <code>{cmd}</code>
         <button className="welcome-banner-copy" onClick={copy}>{copied ? '已复制' : '复制'}</button>
@@ -1131,11 +1144,15 @@ export function App() {
   const prevArchiveCount = useRef(null);
 
   useEffect(() => {
-    fetch('/api/changes')
-      .then((r) => r.json())
-      .then((data) => setArchivedChanges(data.changes ?? []))
-      .catch(() => setArchivedChanges([]));
-  }, []);
+    if (!selectedProject) {
+      setArchivedChanges(null);
+      prevArchiveCount.current = null;
+      return;
+    }
+    setArchivedChanges(null);
+    fetchChanges(selectedProject.path, roots)
+      .then((data) => setArchivedChanges(data.changes ?? []));
+  }, [selectedProject?.path]);
 
   useEffect(() => {
     if (archivedChanges === null) return;
@@ -1284,8 +1301,8 @@ export function App() {
       </aside>
 
       {activeView === 'dashboard' && (
-        archivedChanges !== null && archivedChanges.length === 0
-          ? <WelcomeBanner />
+        selectedProject && archivedChanges !== null && archivedChanges.length === 0
+          ? <WelcomeBanner projectPath={selectedProject.path} />
           : <DashboardPage projects={projects} roots={roots} />
       )}
       {activeView === 'projects' && (
@@ -1317,7 +1334,7 @@ export function App() {
           error={error}
         />
       )}
-      {activeView === 'changes' && <ChangesPage />}
+      {activeView === 'changes' && <ChangesPage project={selectedProject} roots={roots} />}
       {activeView === 'workflows' && <WorkflowsPage />}
     </main>
   );

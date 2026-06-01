@@ -47,8 +47,14 @@ function assertProjectInScanRoots(projectPath, scanRoots) {
   return normalizedProject;
 }
 
-app.get('/api/changes', async (_request, response) => {
+app.get('/api/changes', async (request, response) => {
   try {
+    const rawPath = request.query.projectPath;
+    if (rawPath) {
+      const roots = rootsFromRequest(request);
+      const projectPath = assertProjectInScanRoots(String(rawPath), roots);
+      return response.json(await listChanges(projectPath));
+    }
     response.json(await listChanges());
   } catch (error) {
     response.json({ available: false, changes: [], error: error.message });
@@ -56,7 +62,17 @@ app.get('/api/changes', async (_request, response) => {
 });
 
 app.get('/api/changes/:id/proposal', async (request, response) => {
-  const content = await readProposalContent(request.params.id).catch(() => null);
+  const rawPath = request.query.projectPath;
+  let repoRoot;
+  if (rawPath) {
+    try {
+      const roots = rootsFromRequest(request);
+      repoRoot = assertProjectInScanRoots(String(rawPath), roots);
+    } catch {
+      return response.status(404).json({ content: null });
+    }
+  }
+  const content = await readProposalContent(request.params.id, repoRoot).catch(() => null);
   if (content === null) return response.status(404).json({ content: null });
   response.json({ content });
 });

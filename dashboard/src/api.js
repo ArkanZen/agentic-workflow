@@ -78,3 +78,17 @@ export function runAction(payload) {
     body: JSON.stringify(payload)
   });
 }
+
+/**
+ * 拉取项目的已归档变更列表。
+ * @param {string} projectPath 项目路径。
+ * @param {string[]} roots 扫描根目录。
+ * @returns {Promise<{available: boolean, changes: object[]}>} 归档变更列表。
+ */
+export function fetchChanges(projectPath, roots) {
+  const params = new URLSearchParams();
+  if (projectPath) params.set('projectPath', projectPath);
+  if (roots?.length) params.set('roots', roots.join(','));
+  const qs = params.toString();
+  return requestJson(`/api/changes${qs ? `?${qs}` : ''}`).catch(() => ({ available: false, changes: [] }));
+}

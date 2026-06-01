@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1 - 2026-06-01
+
+- wf-complex 修正 writing-plans 调用位置：从「用户确认实现后」移到「propose 完成后、展示结果前」（步骤 4→5），用户看到的 tasks 已经过细化，所见即所得。
+- wf-debug 新增 /gstack-investigate 条件路径：多文件调用链复杂 bug 优先推荐 /gstack-investigate；GStack 未安装时显式说明并降级到 systematic-debugging；简单 bug 保留原有 systematic-debugging 路径。
+
 ## 1.3.0 - 2026-06-01
 
 - 新增工作流状态感知（A 方案）：所有 wf-* 执行期间每次回复顶部输出状态行 `> wf-[name] · [change] · 步骤 N/M`，用户随时能确认当前所在步骤，支持口头纠偏。

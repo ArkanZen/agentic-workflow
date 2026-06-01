@@ -19,7 +19,9 @@ Debug / 重构 / 单测通道。
 
 诊断收集完成后，判断任务子类型并直接处理：
 
-- **找 bug / 排查问题**：调用 superpowers:systematic-debugging，按复现 → 假设 → 验证 → 修复推进
+- **找 bug / 排查问题**：
+  - 若 bug 涉及多文件调用链、难以复现或错误来源不明：优先尝试 /gstack-investigate（GStack 专为 Claude Code 环境设计，能直接追踪调用链和运行时行为）。若 GStack 未安装，说明缺失并降级到 superpowers:systematic-debugging。
+  - 若 bug 单文件或原因方向明确：调用 superpowers:systematic-debugging，按复现 → 假设 → 验证 → 修复推进
 - **补单测 / TDD 新功能**：调用 superpowers:test-driven-development，先写测试，再实现并验证
 - **纯重构**：调用 superpowers:brainstorming 确认重构边界，再直接实现
 

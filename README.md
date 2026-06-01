@@ -162,13 +162,24 @@ bash ~/agentic-workflow/validate-workflow.sh /path/to/your/project
 
 如果你维护多个本地项目，推荐先启动 Node Web UI，再通过 Dashboard 给项目安装工作流。它可以查看每个项目的安装状态、workflow tier（工作流档位）、版本、宿主、OpenSpec active change（活跃变更）统计、GStack/Superpowers 工具能力和 doctor（健康检查）结果。
 
+**前提条件：** Node.js 18+
+
 ```bash
-cd dashboard
-npm install
-npm run dev
+# 从仓库根目录直接启动（无需 cd）
+npm --prefix dashboard install
+npm --prefix dashboard run dev
+
+# 或进入子目录启动
+cd dashboard && npm install && npm run dev
 ```
 
-默认打开 `http://127.0.0.1:5173`；如果端口被占用，Vite 会自动尝试下一个端口。本地 API 只监听 `127.0.0.1`，写操作仅允许预定义 workflow actions（工作流维护动作）：运行 doctor（健康检查）、install（安装工作流）、upgrade（升级）当前档位模板、switch tier（切换工作流档位）和写入工作流文档 `.gitignore` 忽略块。MVP 不提供远程访问、账号体系、插件市场或第三方插件自动安装。
+启动后有两个本地服务：
+- **UI**：`http://127.0.0.1:5173`（Vite 开发服务，端口占用时自动递增）
+- **API**：`http://127.0.0.1:4317`（Express 后端，仅监听本地回环地址）
+
+如需自定义 API 端口：`DASHBOARD_PORT=8080 npm run dev`
+
+本地 API 只监听 `127.0.0.1`，写操作仅允许预定义 workflow actions（工作流维护动作）：运行 doctor（健康检查）、install（安装工作流）、upgrade（升级）当前档位模板、switch tier（切换工作流档位）和写入工作流文档 `.gitignore` 忽略块。MVP 不提供远程访问、账号体系、插件市场或第三方插件自动安装。
 
 Dashboard 首次使用建议：
 

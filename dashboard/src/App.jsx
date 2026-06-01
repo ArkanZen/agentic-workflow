@@ -130,6 +130,31 @@ function installStatus(project) {
 }
 
 /**
+ * 首次使用欢迎横幅。
+ * @returns {JSX.Element} 欢迎横幅。
+ */
+function WelcomeBanner() {
+  const cmd = 'npm --prefix dashboard run dev';
+  const [copied, setCopied] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(cmd).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+  return (
+    <div className="welcome-banner">
+      <h2>欢迎使用 agentic-workflow Dashboard</h2>
+      <p>还没有归档变更。运行 <code>/wf-quick</code> 开始你的第一个变更，完成后归档即可看到记录。</p>
+      <div className="welcome-banner-cmd">
+        <code>{cmd}</code>
+        <button className="welcome-banner-copy" onClick={copy}>{copied ? '已复制' : '复制'}</button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * 单个状态徽标组件。
  * @param {{label: string, tone?: string}} props 组件属性。
  * @returns {JSX.Element} 徽标元素。
@@ -143,9 +168,18 @@ function Badge({ label, tone = 'muted' }) {
  * @param {{project: object, selected: boolean, onSelect: () => void}} props 组件属性。
  * @returns {JSX.Element} 项目行。
  */
-function ProjectRow({ project, selected, onSelect }) {
+function ProjectRow({ project, selected, onSelect, compact = false }) {
   const health = healthLabel(project.doctor);
   const status = installStatus(project);
+  const dotColor = project.installed ? 'green' : project.partial ? 'yellow' : 'grey';
+  if (compact) {
+    return (
+      <button className={`project-row project-row-compact ${selected ? 'selected' : ''}`} onClick={onSelect}>
+        <span className={`health-dot health-dot-${dotColor}`} title={status.label} />
+        <span className="project-name">{project.name}</span>
+      </button>
+    );
+  }
   return (
     <button className={`project-row ${selected ? 'selected' : ''}`} onClick={onSelect}>
       <span className="project-name">{project.name}</span>
@@ -1015,6 +1049,14 @@ export function App() {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [archivedChanges, setArchivedChanges] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/changes')
+      .then((r) => r.json())
+      .then((data) => setArchivedChanges(data.changes ?? []))
+      .catch(() => setArchivedChanges([]));
+  }, []);
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.path === selectedPath) ?? projects[0] ?? null,
@@ -1139,12 +1181,17 @@ export function App() {
               project={project}
               selected={selectedProject?.path === project.path}
               onSelect={() => selectProject(project.path)}
+              compact
             />
           ))}
         </div>
       </aside>
 
-      {activeView === 'dashboard' && <DashboardPage projects={projects} roots={roots} />}
+      {activeView === 'dashboard' && (
+        archivedChanges !== null && archivedChanges.length === 0
+          ? <WelcomeBanner />
+          : <DashboardPage projects={projects} roots={roots} />
+      )}
       {activeView === 'projects' && (
         <ProjectsPage
           project={selectedProject}

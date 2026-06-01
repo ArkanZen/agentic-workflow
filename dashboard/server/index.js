@@ -5,6 +5,7 @@ import { DEFAULT_SCAN_ROOTS, isInsideScanRoots, normalizePath, normalizeScanRoot
 import { discoverProjects } from './lib/scanner.js';
 import { runDoctor } from './lib/doctor.js';
 import { buildWorkflowActionPreview, detectWorkflowInstall, runWorkflowAction } from './lib/actions.js';
+import { listChanges, readProposalContent } from './lib/openspec.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +46,20 @@ function assertProjectInScanRoots(projectPath, scanRoots) {
   }
   return normalizedProject;
 }
+
+app.get('/api/changes', async (_request, response) => {
+  try {
+    response.json(await listChanges());
+  } catch (error) {
+    response.json({ available: false, changes: [], error: error.message });
+  }
+});
+
+app.get('/api/changes/:id/proposal', async (request, response) => {
+  const content = await readProposalContent(request.params.id).catch(() => null);
+  if (content === null) return response.status(404).json({ content: null });
+  response.json({ content });
+});
 
 app.get('/api/scan-roots', (_request, response) => {
   response.json({ roots: normalizeScanRoots(DEFAULT_SCAN_ROOTS) });

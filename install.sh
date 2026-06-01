@@ -971,3 +971,6 @@ echo -e "    Codex App:   ${BOLD}/wf-quick${RESET} / ${BOLD}/wf-small${RESET} / 
 echo ""
 echo -e "  ${GREEN}${BOLD}安装脚本执行完毕。${RESET}"
 echo ""
+echo -e "  ${CYAN}→ 启动 Dashboard 查看项目状态：${RESET}"
+echo -e "    ${BOLD}npm --prefix \"$WORKFLOW_DIR/dashboard\" install && npm --prefix \"$WORKFLOW_DIR/dashboard\" run dev${RESET}"
+echo ""

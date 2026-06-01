@@ -1013,12 +1013,30 @@ export function App() {
   const [selectedPath, setSelectedPath] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.path === selectedPath) ?? projects[0] ?? null,
     [projects, selectedPath]
   );
   const capabilities = projects[0]?.capabilities ?? null;
+
+  const filteredProjects = useMemo(() => {
+    let list = projects;
+    if (statusFilter === 'installed') {
+      list = list.filter((p) => p.installed);
+    } else if (statusFilter === 'partial') {
+      list = list.filter((p) => p.partial);
+    } else if (statusFilter === 'installable') {
+      list = list.filter((p) => p.installable);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      list = list.filter((p) => p.name.toLowerCase().includes(q));
+    }
+    return list;
+  }, [projects, statusFilter, searchQuery]);
 
   /**
    * 刷新项目扫描结果。
@@ -1096,8 +1114,26 @@ export function App() {
         </div>
         {error && <p className="error">{error}</p>}
         <div className="sidebar-section-title">项目</div>
+        <div className="filter-bar">
+          <input
+            className="filter-search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="搜索项目名称"
+          />
+          <select
+            className="filter-status"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+          >
+            <option value="all">全部</option>
+            <option value="installed">已安装</option>
+            <option value="partial">部分配置</option>
+            <option value="installable">可安装</option>
+          </select>
+        </div>
         <div className="project-list">
-          {projects.map((project) => (
+          {filteredProjects.map((project) => (
             <ProjectRow
               key={project.path}
               project={project}
@@ -1115,7 +1151,7 @@ export function App() {
           roots={roots}
           onDoctor={updateDoctor}
           onSelectProject={selectProject}
-          projects={projects}
+          projects={filteredProjects}
           onActionComplete={refreshProjects}
         />
       )}

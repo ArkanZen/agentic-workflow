@@ -215,6 +215,20 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.filter-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(96px, max-content);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.filter-search,
+.filter-status {
+  height: 32px;
+  font-size: 12px;
+  padding: 0 8px;
+}
+
 .project-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

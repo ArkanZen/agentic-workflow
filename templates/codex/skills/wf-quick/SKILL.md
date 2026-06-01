@@ -55,6 +55,7 @@ conditional_skills:
 2. 从用户输入派生 kebab-case 变更名（加 `quick-` 前缀，例如 `quick-fix-date-format`）
 3. 运行 `openspec new change "<name>"`
 4. 运行 `openspec instructions proposal --change "<name>" --json`，生成 proposal.md
+   提示：先运行 `git diff --stat`，把变更文件列表粘贴到 proposal 背景一栏可节省时间。
 5. 跳过 design.md（快速通道不生成此工件，不运行任何 gate）
 6. 运行 `openspec instructions tasks --change "<name>" --json`，生成 tasks.md
 7. 生成完成后必须展示：

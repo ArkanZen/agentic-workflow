@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.2 - 2026-06-01
+
+- Codex skills 全面同步 v1.3.x 改动：wf-debug / wf-small / wf-complex / wf-plan / wf-quick（已在 v1.3.0 完成）均已对齐 Claude 版模板。
+- wf-debug Codex：新增诊断前置步骤（症状/最近 commit/相关文件/错误输出）、/gstack-investigate 条件路径（GStack 不可用时降级到 systematic-debugging）、状态行规则。
+- wf-small Codex：新增状态行、.wf-active 写入/删除、任务上下文注入（git diff + grep）、归档默认化（任务全完成时直接归档）。
+- wf-complex Codex：新增状态行、.wf-active 写入/删除、writing-plans 移到 propose 后展示前（修正位置）、归档默认化。
+- wf-plan Codex：新增状态行。
+
 ## 1.3.1 - 2026-06-01
 
 - wf-complex 修正 writing-plans 调用位置：从「用户确认实现后」移到「propose 完成后、展示结果前」（步骤 4→5），用户看到的 tasks 已经过细化，所见即所得。

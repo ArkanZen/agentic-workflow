@@ -7,6 +7,10 @@ description: |
 
 小需求完整通道。
 
+**状态行规则**：在本工作流执行期间，每次回复开头输出一行：
+`> wf-small · <change-name> · 步骤 N/14`
+change-name 在步骤 4（openspec propose）确定后填入，此前用 `…` 占位；N 为当前正在执行的步骤编号。
+
 适用于功能点清晰、改动范围明确、无需额外产品探索的变更。
 
 ## 强制依赖清单
@@ -59,11 +63,19 @@ conditional_skills:
 
 执行以下步骤：
 1. 读取 openspec/config.yaml 中 commit_checkpoints.start 规则并执行。
+   完成后写入 `.wf-active`（确保 git-ignored）：
+   ```bash
+   echo '{"workflow":"wf-small","change":"pending","started":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > .wf-active
+   grep -q "\.wf-active" .gitignore 2>/dev/null || echo ".wf-active" >> .gitignore
+   ```
 2. 将用户输入作为需求背景，不重复询问已说明的信息
 3. 对照 `risk_triggers` 判断本次变更命中的风险类型，并在首轮摘要中用最多 6 行轻量表格列出结果。表格格式：`| 风险 | 命中 | 触发能力 |`；风险只覆盖架构/UI/安全/测试/数据口径/浏览器验证，理由只在必要时用不超过 12 个字补充。
 4. 执行 `/openspec-propose`，生成 proposal、按风险触发的 design gate 和 tasks；不得手写替代 proposal 流程。
 5. 若任一 gate 阻断，先根据审查意见修改 proposal/design，再继续
-6. 生成完成后必须展示：
+6. 任务上下文收集（展示结果前执行）：
+   运行 `git diff --stat HEAD` 获取最近修改的文件列表；从 proposal 变更描述中提取关键词，grep 找到相关源文件路径。
+   tasks.md 中每个任务须引用具体文件路径（若能确定），避免泛化描述。
+7. 生成完成后必须展示：
    - proposal.md / design.md / tasks.md 的绝对路径链接
    - design 顶部 gate 状态摘要；若未触发某 gate，说明未触发理由
    - tasks.md 中的 checkbox 清单摘要
@@ -76,8 +88,11 @@ conditional_skills:
 9. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
 10. 实现完成后加载 `superpowers:verification-before-completion` 运行必要验证，并在结果中说明已验证项。
 11. 验证通过后同步 `tasks.md`：将已确认完成的任务从 `- [ ]` 勾选为 `- [x]`；若存在无法确认完成的任务，先告知用户并保留未勾选状态。
-12. 询问用户是否归档；用户确认后再执行 `/openspec-archive-change`。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑。
+12. 若第 11 步所有任务已完成：说明「准备归档并完成此变更」，直接执行 `/openspec-archive-change`；用户明确说「跳过归档」时保留 active change 不归档。
+    若有未完成任务：使用 UI 交互询问用户是否归档，用户确认后再执行 `/openspec-archive-change`。
+    归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑。
 13. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
+    提交完成后删除 `.wf-active`：`rm -f .wf-active`
 
 ## 收尾审计
 

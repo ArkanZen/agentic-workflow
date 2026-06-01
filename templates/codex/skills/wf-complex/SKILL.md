@@ -7,6 +7,10 @@ description: |
 
 复杂变更通道。
 
+**状态行规则**：在本工作流执行期间，每次回复开头输出一行：
+`> wf-complex · <change-name> · 步骤 N/14`
+change-name 在步骤 4（openspec propose）确定后填入，此前用 `…` 占位；N 为当前正在执行的步骤编号。
+
 适用于跨模块、架构变更、业务边界不清晰或实现风险较高的任务。
 
 ## 强制依赖清单
@@ -64,22 +68,30 @@ conditional_reviews:
 
 执行以下步骤：
 1. 读取 openspec/config.yaml 中 commit_checkpoints.start 规则并执行。
+   完成后写入 `.wf-active`（确保 git-ignored）：
+   ```bash
+   echo '{"workflow":"wf-complex","change":"pending","started":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > .wf-active
+   grep -q "\.wf-active" .gitignore 2>/dev/null || echo ".wf-active" >> .gitignore
+   ```
 2. 加载并执行 `superpowers:brainstorming`，探索需求、边界、风险和替代方案。
 3. 对照 `risk_triggers` 判断本次变更命中的风险类型，展示探索结论、风险和推荐路径，使用 UI 交互询问用户是否确认进入 OpenSpec 提案。
 4. 用户确认后，执行 `/openspec-propose`（含 `/gstack-plan-eng-review`，并按风险触发 UI/安全 gate）；不得手写替代 proposal 流程。
-5. proposal/design/tasks 生成后必须展示：
+5. propose 完成后，加载并执行 `superpowers:writing-plans` 细化任务分解，确保 tasks.md 颗粒度合理、顺序清晰。
+6. proposal/design/tasks 生成后必须展示：
    - proposal.md / design.md / tasks.md 的绝对路径链接
    - design 顶部 gate 状态摘要
-   - tasks.md 中的 checkbox 清单摘要
-6. 使用 UI 交互询问用户是否确认该设计和 tasks；用户确认前不得实现。
-7. apply 前加载并执行 `superpowers:writing-plans` 细化任务分解，并再次展示最终任务摘要。
+   - tasks.md 中的 checkbox 清单摘要（已经过 writing-plans 细化）
+7. 使用 UI 交互询问用户是否确认该设计和 tasks；用户确认前不得实现。
 8. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
 9. 实现完成后执行 `/gstack-review`；若审查阻断，先修复再进入验收。
 10. 若命中 Web 流程风险，执行 `/gstack-qa` 或说明降级验证方式。
 11. 完成后加载并执行 `superpowers:verification-before-completion` 验收，并在结果中说明已验证项。
 12. 验证通过后同步 `tasks.md` 勾选状态；若存在无法确认完成的任务，先告知用户并保留未勾选状态。
-13. 询问用户是否归档；用户确认后再执行 /openspec-archive-change。归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑。
+13. 若第 12 步所有任务已完成：说明「准备归档并完成此变更」，直接执行 `/openspec-archive-change`；用户明确说「跳过归档」时保留 active change 不归档。
+    若有未完成任务：使用 UI 交互询问用户是否归档，用户确认后再执行 `/openspec-archive-change`。
+    归档时保留 /openspec-archive-change 的选择、未完成任务和 delta spec 同步确认逻辑。
 14. 归档决策完成后，读取 openspec/config.yaml 中 commit_checkpoints.end 规则并执行最终提交；最终提交应覆盖代码、测试、OpenSpec tasks 勾选、归档移动和 spec sync。
+    提交完成后删除 `.wf-active`：`rm -f .wf-active`
 
 ## 收尾审计
 

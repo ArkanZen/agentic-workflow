@@ -7,6 +7,10 @@ description: |
 
 Debug / 重构 / 单测通道。
 
+**状态行规则**：在本工作流执行期间，每次回复开头输出一行：
+`> wf-debug · <问题简述>`
+问题简述从用户输入中提取，控制在 10 个字以内。
+
 ## 强制依赖清单
 
 必须在排查、阅读代码、运行测试或提出修复前，先根据任务子类型加载对应 skill 的 `SKILL.md`。不得只按方法论摘要执行，也不得把“按某方法论”理解为无需加载 skill。
@@ -42,9 +46,17 @@ conditional_skills:
 - 已加载状态：已加载 / 未加载并说明降级原因
 - 下一步：进入对应 skill 的第一阶段或第一步
 
-判断任务子类型并直接处理：
+**诊断收集**（执行任何 skill 前先完成，约 2 分钟）：
+1. **症状**：用一句话确认问题现象（从用户输入提取或补充询问）
+2. **最近改动**：运行 `git log --oneline -5`，列出最近 5 次提交
+3. **相关文件**：根据问题描述，grep 相关源文件路径（`grep -r "<关键词>" --include="*.{js,ts,py,go}" -l . 2>/dev/null | head -5`）
+4. **错误输出**：若用户已提供错误信息，摘录关键行；若未提供，询问是否有错误日志或测试输出
 
-- 找 bug / 排查问题：必须先加载 `superpowers:systematic-debugging`，完成 Phase 1 根因调查前禁止提出修复方案。
+诊断收集完成后，判断任务子类型并直接处理：
+
+- 找 bug / 排查问题：
+  - 若 bug 涉及多文件调用链、难以复现或错误来源不明：优先尝试 `/gstack-investigate`（GStack 专为 Codex App 环境设计，能直接追踪调用链）。若 GStack 未安装，说明缺失并降级到 `superpowers:systematic-debugging`。
+  - 若 bug 单文件或原因方向明确：必须先加载 `superpowers:systematic-debugging`，完成 Phase 1 根因调查前禁止提出修复方案。
 - 补单测 / TDD 新功能：必须先加载 `superpowers:test-driven-development`，先写失败测试并确认失败，再实现和验证。
 - 纯重构：必须先加载 `superpowers:brainstorming` 明确重构边界和目标；若改变行为，还必须加载 `superpowers:test-driven-development`。
 

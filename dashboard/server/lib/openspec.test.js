@@ -85,4 +85,36 @@ describe('readProposalContent', () => {
 
     expect(result).toBeNull();
   });
+
+  it('大写字母或特殊字符 changeId 被正则拒绝返回 null', async () => {
+    const root = await createTempRoot();
+    const archiveDir = path.join(root, 'openspec', 'changes', 'archive');
+    // 创建目录但不应能被访问
+    await fs.mkdir(path.join(archiveDir, 'UPPERCASE'), { recursive: true });
+    await fs.writeFile(path.join(archiveDir, 'UPPERCASE', 'proposal.md'), 'secret');
+
+    expect(await readProposalContent('UPPERCASE', root)).toBeNull();
+    expect(await readProposalContent('with space', root)).toBeNull();
+    expect(await readProposalContent('with.dot', root)).toBeNull();
+  });
+});
+
+describe('listChanges 多条归档', () => {
+  it('多个归档目录时按目录顺序全部返回', async () => {
+    const root = await createTempRoot();
+    const archiveDir = path.join(root, 'openspec', 'changes', 'archive');
+    for (const name of ['2026-05-01-alpha', '2026-06-01-beta', '2026-06-02-gamma']) {
+      await fs.mkdir(path.join(archiveDir, name), { recursive: true });
+      await fs.writeFile(path.join(archiveDir, name, 'proposal.md'), `# ${name}`);
+    }
+
+    const result = await listChanges(root);
+
+    expect(result.available).toBe(true);
+    expect(result.changes).toHaveLength(3);
+    const ids = result.changes.map((c) => c.id);
+    expect(ids).toContain('2026-05-01-alpha');
+    expect(ids).toContain('2026-06-01-beta');
+    expect(ids).toContain('2026-06-02-gamma');
+  });
 });

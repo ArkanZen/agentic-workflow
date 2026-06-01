@@ -1143,6 +1143,12 @@ export function App() {
   const [showCelebration, setShowCelebration] = useState(false);
   const prevArchiveCount = useRef(null);
 
+  const selectedProject = useMemo(
+    () => projects.find((project) => project.path === selectedPath) ?? projects[0] ?? null,
+    [projects, selectedPath]
+  );
+  const capabilities = projects[0]?.capabilities ?? null;
+
   useEffect(() => {
     if (!selectedProject) {
       setArchivedChanges(null);
@@ -1169,12 +1175,6 @@ export function App() {
     window.localStorage.setItem('agentic-workflow-dashboard.first-archive-seen', '1');
     setShowCelebration(false);
   }
-
-  const selectedProject = useMemo(
-    () => projects.find((project) => project.path === selectedPath) ?? projects[0] ?? null,
-    [projects, selectedPath]
-  );
-  const capabilities = projects[0]?.capabilities ?? null;
 
   const filteredProjects = useMemo(() => {
     let list = projects;

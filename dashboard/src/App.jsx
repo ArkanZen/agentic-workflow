@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { detectInstall, fetchProjects, previewAction, runAction, runDoctor } from './api.js';
 
 // 工作流档位选项，用于安装、升级和切换档位动作。
@@ -19,6 +19,7 @@ const ROOTS_STORAGE_KEY = 'agentic-workflow-dashboard.roots';
 const GLOBAL_VIEWS = [
   { id: 'dashboard', label: '仪表盘' },
   { id: 'projects', label: '项目' },
+  { id: 'changes', label: '变更' },
   { id: 'install', label: '安装工作流' },
   { id: 'strategy', label: '工作流策略' },
   { id: 'tools', label: '工具能力' },
@@ -127,6 +128,82 @@ function installStatus(project) {
     return { label: '部分配置', tone: 'warn' };
   }
   return { label: '可安装', tone: 'muted' };
+}
+
+/**
+ * 首次归档庆祝横幅。
+ * @param {{onClose: () => void}} props
+ * @returns {JSX.Element}
+ */
+function CelebrationBanner({ onClose }) {
+  return (
+    <div className="celebration-banner">
+      <span>🎉 第一个变更已归档！这是你的 AI 协作历史的开始。</span>
+      <button className="celebration-close" onClick={onClose}>×</button>
+    </div>
+  );
+}
+
+/**
+ * 变更历史页面。
+ * @returns {JSX.Element}
+ */
+function ChangesPage() {
+  const [result, setResult] = useState(null);
+  const [proposals, setProposals] = useState({});
+  const [expanded, setExpanded] = useState({});
+
+  useEffect(() => {
+    fetch('/api/changes')
+      .then((r) => r.json())
+      .then(setResult)
+      .catch(() => setResult({ available: false, changes: [] }));
+  }, []);
+
+  async function toggle(id) {
+    const next = !expanded[id];
+    setExpanded((e) => ({ ...e, [id]: next }));
+    if (next && proposals[id] === undefined) {
+      const res = await fetch(`/api/changes/${id}/proposal`).then((r) => r.json()).catch(() => ({ content: null }));
+      setProposals((p) => ({ ...p, [id]: res.content }));
+    }
+  }
+
+  if (!result) return <section className="detail"><p className="quiet">加载中…</p></section>;
+  if (!result.available || result.changes.length === 0) {
+    return (
+      <section className="detail">
+        <PageHead eyebrow="变更历史" title="变更" subtitle="已归档的 OpenSpec 变更记录" />
+        <p className="quiet">OpenSpec 未配置或无归档变更</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="detail">
+      <PageHead eyebrow="变更历史" title="变更" subtitle={`${result.changes.length} 条归档记录`} />
+      <div className="changes-list">
+        {result.changes.map((change) => (
+          <div key={change.id} className="change-card">
+            <button className="change-card-header" onClick={() => toggle(change.id)}>
+              <span className="change-title">{change.title}</span>
+              <span className="change-meta">{change.date}</span>
+              <span className="change-toggle">{expanded[change.id] ? '▲' : '▼'}</span>
+            </button>
+            {expanded[change.id] && (
+              <div className="change-proposal">
+                {proposals[change.id] === undefined
+                  ? <p className="quiet">加载中…</p>
+                  : proposals[change.id]
+                    ? <pre>{proposals[change.id]}</pre>
+                    : <p className="quiet">暂无 proposal 内容</p>}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 /**
@@ -1050,6 +1127,8 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [archivedChanges, setArchivedChanges] = useState(null);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const prevArchiveCount = useRef(null);
 
   useEffect(() => {
     fetch('/api/changes')
@@ -1057,6 +1136,22 @@ export function App() {
       .then((data) => setArchivedChanges(data.changes ?? []))
       .catch(() => setArchivedChanges([]));
   }, []);
+
+  useEffect(() => {
+    if (archivedChanges === null) return;
+    const count = archivedChanges.length;
+    const prev = prevArchiveCount.current;
+    if (prev === 0 && count > 0) {
+      const seen = window.localStorage.getItem('agentic-workflow-dashboard.first-archive-seen');
+      if (!seen) setShowCelebration(true);
+    }
+    prevArchiveCount.current = count;
+  }, [archivedChanges]);
+
+  function dismissCelebration() {
+    window.localStorage.setItem('agentic-workflow-dashboard.first-archive-seen', '1');
+    setShowCelebration(false);
+  }
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.path === selectedPath) ?? projects[0] ?? null,
@@ -1134,6 +1229,7 @@ export function App() {
 
   return (
     <main className="shell">
+      {showCelebration && <CelebrationBanner onClose={dismissCelebration} />}
       <aside className="sidebar">
         <div className="brand">
           <span className="signal" />
@@ -1221,6 +1317,7 @@ export function App() {
           error={error}
         />
       )}
+      {activeView === 'changes' && <ChangesPage />}
       {activeView === 'workflows' && <WorkflowsPage />}
     </main>
   );

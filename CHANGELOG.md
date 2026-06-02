@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.3 - 2026-06-02
+
+- 新增 `/wf-finish` 命令：显式关闭当前工作流，区分 wf-plan/wf-debug（无 change，直接关闭）和 wf-quick/small/complex（有 in-progress change，询问保留或放弃）。
+- 所有 wf-* 模板新增**切换与退出规则**：收到超出范围请求时必须先宣告工作流状态再处理，不得静默切换；调用其他 /wf-* 命令时自动切换当前工作流。
+- CLAUDE.md 新增工作流切换全局规则，/wf-finish 加入命令列表。
+- Claude Code 和 Codex App 两端同步上述改动。
+
 ## 1.3.2 - 2026-06-01
 
 - Codex skills 全面同步 v1.3.x 改动：wf-debug / wf-small / wf-complex / wf-plan / wf-quick（已在 v1.3.0 完成）均已对齐 Claude 版模板。

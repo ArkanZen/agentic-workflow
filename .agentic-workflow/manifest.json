@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "workflowVersion": "1.2.0",
+  "workflowVersion": "1.3.3",
   "tier": "vibe",
-  "installedAt": "2026-05-27T07:59:24Z",
+  "installedAt": "2026-06-02T01:32:25Z",
   "workflowPath": "/Users/ryan/aiworkspace/agentic-workflow",
   "sourceRepo": "https://github.com/ArkanZen/agentic-workflow",
   "hosts": {
@@ -24,20 +24,23 @@
     }
   },
   "files": [
-    {"path": ".claude/CLAUDE.md", "sha256": "4a4589a48f13dc76dbc85a6459a58945a00aa9da80b37e1c52525ae67f8b9d0f"},
-    {"path": ".claude/commands/wf-complex.md", "sha256": "adcaa0c05d9f8f34ba82e0c7ee7443d08bc2852c06b22b6559ca7cf0c1264521"},
-    {"path": ".claude/commands/wf-debug.md", "sha256": "b6c6ef9ee1bcf68074a36de303302b78c13289172e91c750053eb2d909cd833d"},
+    {"path": ".claude/CLAUDE.md", "sha256": "36e26207b149b37d3b83677fa614431e57a0201b59623fbdef35b85df03a7f4f"},
+    {"path": ".claude/commands/wf-complex.md", "sha256": "689ae774fb0b5242ac3242511b096184379cd27438d5a68fa015805606c83d3f"},
+    {"path": ".claude/commands/wf-debug.md", "sha256": "84d0df749ef0708d57e40de275616b8af3f04c5d8698e6527ef0fdd611dd0454"},
+    {"path": ".claude/commands/wf-finish.md", "sha256": "035f9f0d6254467a4a66fbb4dbbd2b2e342055d9036cab286e206c147af4d56b"},
     {"path": ".claude/commands/wf-install.md", "sha256": "238fa79fd6c4ea49c70adfd5243c054ee271c966fa765c1bd0869669bd876521"},
-    {"path": ".claude/commands/wf-plan.md", "sha256": "34fbe75e83ea63b036b338832905ec71154766c2ecad61194d56433d69aed4cf"},
-    {"path": ".claude/commands/wf-quick.md", "sha256": "ff9ba28c288a12bab9155f43eae8069cb07ea1acf6ddb160d3a62f579baada8b"},
-    {"path": ".claude/commands/wf-small.md", "sha256": "35b11bd12d7ad312b5b09cdf14962c3f342ab328c12d27705881186f5fed5c37"},
-    {"path": ".codex/skills/wf-complex/SKILL.md", "sha256": "b3449d8aa0a00616623648db94d31f742b648067925e6d8029d05584df1429ec"},
-    {"path": ".codex/skills/wf-debug/SKILL.md", "sha256": "19207fcf8b4dc2fbcd02830660a92a255c0747ca194975044c5c563f2b1f1238"},
+    {"path": ".claude/commands/wf-plan.md", "sha256": "857d3dd607f11c6e5be5b445ea700a51fbfcd42a8a9c969915ad46e95e69b83c"},
+    {"path": ".claude/commands/wf-quick.md", "sha256": "033b72ab37728b1b33598dc5d0c3bc3bf6cfa36f801778c1f8540cce2557fbee"},
+    {"path": ".claude/commands/wf-small.md", "sha256": "231a38684daa77174bb9e5921b8b18ef640145aafcfdba8dec841609b52cbee1"},
+    {"path": ".claude/commands/wf-status.md", "sha256": "f342cf31c8b1315a71a0415dccfde0bd92e6892ec6e8deadda5f2abf805c549a"},
+    {"path": ".codex/skills/wf-complex/SKILL.md", "sha256": "28694c93398962dfaf4688b9528f8444d78a2c8e05282d4d86ab23765987248a"},
+    {"path": ".codex/skills/wf-debug/SKILL.md", "sha256": "63c4f6efd7c06b45b69fe7a633d4bff8b01e0864ba9f86237990d71fd27ddc98"},
+    {"path": ".codex/skills/wf-finish/SKILL.md", "sha256": "8b07d3a6852a8cfc3aef31048abd18976e92466dfc67fe4bbd4bf3bb8e974d15"},
     {"path": ".codex/skills/wf-install/SKILL.md", "sha256": "fd15cb1b05384cb28fb48b45511b33ba85f1f4b7935f64b8a61bf1cadd0f3901"},
-    {"path": ".codex/skills/wf-plan/SKILL.md", "sha256": "fc43718d19f74afc4d8bdf609f4eebee569688c2c94f948a0e05e9114c0ddaff"},
-    {"path": ".codex/skills/wf-quick/SKILL.md", "sha256": "fe4c15cb3fefb94add8b526ffcf21d4b5d9db83649188aacd87a3fb6a0582d37"},
-    {"path": ".codex/skills/wf-small/SKILL.md", "sha256": "49594889e60a966097f1ef2e83aeb425031b6d1e6e394dd967a6f4897519ed5a"},
-    {"path": "AGENTS.md", "sha256": "81ad4f54f35b7e3a7bd6994b419e4bbe6d222b6fac7d87bec30665e368085b3e"},
-    {"path": "openspec/config.yaml", "sha256": "d979b1ac7ac20c3a02661ffff75175845e8a8c2fbcb96b1554e7052433c75b35"}
+    {"path": ".codex/skills/wf-plan/SKILL.md", "sha256": "702a6521cc78d93c64d437cc0de054afa6d385af9e6162d8af94b073a92b5a92"},
+    {"path": ".codex/skills/wf-quick/SKILL.md", "sha256": "a6fdfdf9f5fda7fd73c4f1beb8efe08327375f8c29e062ebad11a8b865aee69b"},
+    {"path": ".codex/skills/wf-small/SKILL.md", "sha256": "d29088e804abff40467a6ba4373e1b5450a83de27fe567e8fb01c62c50bdc71b"},
+    {"path": "AGENTS.md", "sha256": "97fb8aaf48c22b2801c88da818a2db8617ea0cbc00bfc59ab9b344534c75e72b"},
+    {"path": "openspec/config.yaml", "sha256": "3cc83b95455ba1c011be1243937cda2534339789ccde4ce516fd99dd0b0fca82"}
   ]
 }

@@ -877,6 +877,10 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
     "$TARGET_DIR/.claude/commands/wf-debug.md" ".claude/commands/wf-debug.md"
   copy_file "$TEMPLATES/claude/commands/wf-plan.md" \
     "$TARGET_DIR/.claude/commands/wf-plan.md" ".claude/commands/wf-plan.md"
+  copy_file "$TEMPLATES/claude/commands/wf-finish.md" \
+    "$TARGET_DIR/.claude/commands/wf-finish.md" ".claude/commands/wf-finish.md"
+  copy_file "$TEMPLATES/claude/commands/wf-status.md" \
+    "$TARGET_DIR/.claude/commands/wf-status.md" ".claude/commands/wf-status.md"
   copy_file "$TEMPLATES/claude/commands/wf-install.md" \
     "$TARGET_DIR/.claude/commands/wf-install.md" ".claude/commands/wf-install.md"
 
@@ -923,6 +927,10 @@ if [[ "$INSTALL_CODEX" == "true" ]]; then
     "$TARGET_DIR/.codex/skills/wf-debug" ".codex/skills/wf-debug"
   copy_dir "$TEMPLATES/codex/skills/wf-plan" \
     "$TARGET_DIR/.codex/skills/wf-plan" ".codex/skills/wf-plan"
+  copy_dir "$TEMPLATES/codex/skills/wf-finish" \
+    "$TARGET_DIR/.codex/skills/wf-finish" ".codex/skills/wf-finish"
+  copy_dir "$TEMPLATES/codex/skills/wf-status" \
+    "$TARGET_DIR/.codex/skills/wf-status" ".codex/skills/wf-status"
   copy_dir "$TEMPLATES/codex/skills/wf-install" \
     "$TARGET_DIR/.codex/skills/wf-install" ".codex/skills/wf-install"
 fi

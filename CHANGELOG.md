@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.5 - 2026-06-22
+
+- 修复 Codex App 端 `/wf-status` 安装失败：v1.3.4 在 install.sh 引用了 `templates/codex/skills/wf-status`，但该模板目录从未创建，导致安装时报 `cp: ... No such file or directory`。补建 `templates/codex/skills/wf-status/SKILL.md`（基于 Codex 版 wf-finish，沿用"优先使用 Codex App UI 交互工具"约定）。
+
+## 1.3.4 - 2026-06-02
+
+- install.sh 补充 `/wf-finish` 和 `/wf-status` 的 copy 调用（此前新项目升级后缺少这两个命令）。
+- wf-debug 新增轻量路径：根因已知时跳过诊断收集和 skill 加载；git log 改为仅在疑似回归时运行，减少无关 context 消耗。
+
 ## 1.3.3 - 2026-06-02
 
 - 新增 `/wf-finish` 命令：显式关闭当前工作流，区分 wf-plan/wf-debug（无 change，直接关闭）和 wf-quick/small/complex（有 in-progress change，询问保留或放弃）。

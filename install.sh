@@ -866,10 +866,9 @@ render_workflow_block() {
 - \`/openspec-archive-change\` — 归档变更
 - \`/openspec-explore\` — 探索思考
 
-### OpenSpec 集成说明
-- \`openspec-propose/apply-change/archive-change/explore\` 是 OpenSpec **skill 名**（由 \`openspec init\` 生成、当前版本仍可用），不是斜杠命令文件。OpenSpec 新版的斜杠命令门面已改为 \`/opsx:propose\` 等；若 \`/openspec-propose\` 调用不到，等价使用 \`/opsx:propose\`（apply/archive/explore 同理）。
-- \`openspec/config.yaml\` 是 OpenSpec 原生文件，其中 \`schema/context/rules\` 会被 OpenSpec CLI 读取并注入工件指令；而 \`risk_triggers/quick_change_criteria/commit_checkpoints\` 是**本工作流私有键**，OpenSpec 不感知、不校验，仅由 wf-* 流程自己执行。
-- \`AGENTS.md\` / \`.claude/CLAUDE.md\` 为**多方共写**文件：本工作流按 \`<!-- agentic-workflow:start/end -->\` marker 管理自己的块；\`openspec update\`/\`init\` 会按 OpenSpec 自己的 marker 改写这两个文件。两套 marker 不同、可共存，但跑 \`openspec update\` 后建议确认本工作流块未被影响。
+### OpenSpec 集成要点
+- \`openspec-propose/apply-change/archive-change/explore\` 是 OpenSpec **skill 名**；若调不到，用等价的 \`/opsx:propose\` 等。
+- config 私有键、多方共写文件、GStack 安装方式等集成细节见 README「集成说明」。
 
 ### 强制依赖加载规则
 当工作流文档出现 \`required_skills\`、\`required_workflows\`、\`required_reviews\`、\`conditional_skills\`，或明确写出 \`superpowers:*\`、\`openspec-*\`、\`/gstack-*\`、\`/plan-*\` 等依赖时，执行者必须先加载或执行对应 skill/workflow/review，再进入下一步。
@@ -879,53 +878,15 @@ render_workflow_block() {
 - 依赖不可用时必须明确说明缺失项和影响，等待用户确认是否降级继续；不得声称已加载或已审查。
 - 完成前必须输出执行审计，列出强制依赖、关键 workflow、review/gate 和验证结果。
 
-### GStack 审查 Skill（由 openspec/config.yaml rules 驱动）
-需先安装官方 GStack。${host} 安装方式：
 WORKFLOWBLOCK
-
-  if [[ "$host" == "Claude Code" ]]; then
-    cat << 'WORKFLOWBLOCK'
-`git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup`
-
-- `/plan-eng-review` — 工程审查（完整通道必须）
-- `/cso` — 安全审查（涉及配置/凭证/外部调用时）
-- `/review` — 代码审查（apply 后运行）
-WORKFLOWBLOCK
-  else
-    cat << 'WORKFLOWBLOCK'
-`git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.codex/skills/gstack && cd ~/.codex/skills/gstack && ./setup --host codex`
-
-- `/gstack-plan-eng-review` — 工程审查（完整通道必须）
-- `/gstack-cso` — 安全审查（涉及配置/凭证时必须）
-- `/gstack-review` — 代码审查（apply 后运行）
-WORKFLOWBLOCK
-  fi
 
   cat << 'WORKFLOWBLOCK'
 
-### GStack 命令名（按安装模式，不是按宿主）
-GStack 命令名取决于安装时选择的 **skill 命名模式**（`flat` / `namespaced`），由用户偏好 `skill_prefix` 决定，**对 Claude Code 和 Codex App 一视同仁**——不由宿主区分。
-
-| 审查动作 | flat 模式 | namespaced 模式 |
-|------|------|------|
-| 工程审查 | `/plan-eng-review` | `/gstack-plan-eng-review` |
-| UI/设计审查 | `/plan-design-review` | `/gstack-plan-design-review` |
-| 安全审查 | `/cso` | `/gstack-cso` |
-| 代码审查 | `/review` | `/gstack-review` |
-
-**本机实际命令名以 `.agentic-workflow/manifest.json` 的 `gstackCommandMap` / `gstackSkillMode` 为准**（安装时已探测写入）。
-
-**命名归一化规则**：本工作流各 wf-* 模板中出现的 GStack 命令名（无论写成 `/cso` 还是 `/gstack-cso`）均为占位写法。执行时按本机模式归一：namespaced → 一律加 `/gstack-` 前缀；flat → 一律去掉前缀。无法确定模式时，先探测安装目录里存在的是 `gstack-review` 还是 `review`，再决定，不要盲目照模板字面调用。
-
-> ⚠️ **`/review` 冲突**：flat 模式下 GStack 的 `/review` 与 Claude Code 内置 `/review`（审 GitHub PR）同名。做代码审查时确认调用的是 GStack 版本（或工作区 diff 用 `/code-review`）；namespaced 模式（`/gstack-review`）无此冲突。
-
-### 审查降级链（GStack / Superpowers 为增强项，非硬依赖）
-GStack 与 Superpowers 是**增强项**，缺失时按下面降级链执行；任何降级都必须明确说明，不得声称完成了未做的审查：
-- **代码审查**：GStack `/review`（namespaced 加 `/gstack-`）→ 不可用时 Claude Code 内置 `/code-review`（Codex 无原生等价 → 结构化自检清单）
-- **安全审查**：GStack `/cso` → 不可用时 Claude Code 内置 `/security-review`（Codex → 自检清单）
-- **工程审查 `/plan-eng-review`、设计审查 `/plan-design-review`**：无原生等价 → 降级为结构化自检清单（按 design 维度逐项核对），并标注「未经 GStack 审查」
-- **Superpowers skill 不可用**：降级到内置等价能力或方法论清单（如 systematic-debugging → 手动二分定位），同样说明
-本机各工具可用性见 \`.agentic-workflow/manifest.json\` 的 \`tooling\` / \`reviewFallback\`。
+### GStack 审查（增强项，非硬依赖）
+GStack/Superpowers 不是硬依赖。命令名按安装模式（`flat` 裸名 / `namespaced` 加 `/gstack-` 前缀）决定，**与宿主无关**；**本机实际命令名见 `.agentic-workflow/manifest.json` 的 `gstackCommandMap` / `gstackSkillMode`**，模板里的命令名为占位，按本机模式归一化（namespaced 加前缀、flat 去前缀）。
+- **降级链**：代码审查 GStack `/review` → 无则 Claude 内置 `/code-review`（Codex → 自检清单）；安全审查 `/cso` → `/security-review`；工程/设计审查无原生等价 → 结构化自检清单并标注「未经 GStack 审查」；Superpowers 不可用 → 内置等价/方法论清单。任何降级必须说明；可用性见 manifest 的 `tooling` / `reviewFallback`。
+- ⚠️ `flat` 模式下 GStack `/review` 与 Claude Code 内置 `/review`（审 PR）同名；用 `/code-review` 审工作区 diff，或用 namespaced 规避。
+- GStack 安装方式、OpenSpec 集成细节见 README「集成说明」。
 
 （Agent 角色编排为 wf-complex 内的临场优化提示，不在此常驻块定义；见 /wf-complex。）
 

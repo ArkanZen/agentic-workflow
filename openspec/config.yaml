@@ -1,7 +1,7 @@
 schema: spec-driven
 # vibe 模式 — 轻量快速，适合个人项目、原型验证，无 design gate
 # agentic-workflow-tier: vibe
-# agentic-workflow-version: 1.7.1
+# agentic-workflow-version: 1.7.2
 
 context: |
   完整项目上下文见 openspec/specs/project.md。

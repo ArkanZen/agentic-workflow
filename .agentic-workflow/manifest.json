@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "workflowVersion": "1.7.1",
+  "workflowVersion": "1.7.2",
   "tier": "vibe",
-  "installedAt": "2026-06-29T05:51:10Z",
+  "installedAt": "2026-06-29T06:20:24Z",
   "workflowPath": "/Users/ryan/aiworkspace/agentic-workflow",
   "sourceRepo": "https://github.com/ArkanZen/agentic-workflow",
   "hosts": {
@@ -36,7 +36,7 @@
     "codex":  { "codeReview": "结构化自检清单", "securityReview": "结构化自检清单", "engineeringReview": "结构化自检清单", "designReview": "结构化自检清单" }
   },
   "files": [
-    {"path": ".claude/CLAUDE.md", "sha256": "b5bc14545eda6f633ba14fb66c1d0ae31ed9f2366548a8b909eb8876567d1c47"},
+    {"path": ".claude/CLAUDE.md", "sha256": "43f9c6f294d983c9ca64ff3fa1ed0c596a20e334f093d6e8eb9a8a589ca00dd3"},
     {"path": ".claude/commands/wf-complex.md", "sha256": "451e2ccec4bbc8e6dcf11fbb087ed4ae76f38b03ba3157ddb10ecf529cb360cb"},
     {"path": ".claude/commands/wf-debug.md", "sha256": "f4e48c974168e2a4256893aac6f498b97403ef42931dee1c5d98e52dabc5ea97"},
     {"path": ".claude/commands/wf-finish.md", "sha256": "d2c9c737c1eb6fb7ee2c268b0595860a742480ecdaff5898a73a7204ba24044c"},
@@ -55,7 +55,7 @@
     {"path": ".codex/skills/wf-small/SKILL.md", "sha256": "7e7d8972c1615bc4fb4020cef397b5b18d192007d11ca55489647cfa35e3ad85"},
     {"path": ".codex/skills/wf-status/SKILL.md", "sha256": "591f2d219637c396c7680034ab692b48273ce7ee75a03eab3769e8c4589282a6"},
     {"path": ".codex/skills/wf-uninstall/SKILL.md", "sha256": "ed3c6dd6539dc9200f07a9582a154365f77376e9560524c8964f8cd531e00add"},
-    {"path": "AGENTS.md", "sha256": "1b11fabd9ba462b7406872181fae07e25cd2917cda6156906326ad97eee1a178"},
-    {"path": "openspec/config.yaml", "sha256": "c93a354095091c516ab0ba26d50350c201d177c637c004bb5cc58ecc1c373e71"}
+    {"path": "AGENTS.md", "sha256": "022c824c14ad715eeb8c0ca77bae470dbf568644a30a92f541e68a3b3d583752"},
+    {"path": "openspec/config.yaml", "sha256": "71d20be25dd96c84515e2be223e25d3aac0a8c468a2b6fad5eddad30c4ed0dfe"}
   ]
 }

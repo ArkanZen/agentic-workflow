@@ -315,6 +315,21 @@ else
   warn ".claude/CLAUDE.md 不存在"
 fi
 
+step "常驻块预算"
+# 常驻块 = CLAUDE.md/AGENTS.md 中 render_workflow_block 渲染的内容，每轮都加载。
+# 设行数预算防止它悄悄膨胀；非普适内容应下沉到按需加载的 wf-* 命令或 README。
+block_budget=70
+block_lines="$(awk '/^render_workflow_block\(\)/{infn=1}
+     infn && /<!-- agentic-workflow:start -->/{f=1}
+     f && infn { if ($0 !~ /(cat <<|^WORKFLOWBLOCK$|WORKFLOWBLOCK'"'"')/) n++ }
+     infn && /<!-- agentic-workflow:end -->/{f=0; infn=0}
+     END{print n+0}' "$script_dir/install.sh")"
+if [[ "$block_lines" -le "$block_budget" ]]; then
+  ok "常驻块预算：${block_lines}/${block_budget} 行"
+else
+  warn "常驻块超预算：${block_lines} > ${block_budget} 行——把非普适内容下沉到 wf-* 命令或 README，别堆进常驻块"
+fi
+
 step "宿主工具"
 command -v openspec >/dev/null 2>&1 && ok "openspec CLI 可用" || fail "openspec CLI 不可用"
 

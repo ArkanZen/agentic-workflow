@@ -433,6 +433,15 @@ GStack 与 Superpowers 不是硬依赖，缺失时按降级链执行，任何降
 
 `/wf-complex` 内有一句**可选**提示：阶段多、风险高时可酌情把探索/设计/实现/审查交给专职子 agent（Explore/Plan、tech-design、`subagent-driven-development`、code-reviewer、`dispatching-parallel-agents`）。它是**临场优化、非正式契约**，不进常驻的 CLAUDE.md/AGENTS.md 块（避免轻通道也常驻加载）；子 agent 内部过程不落盘，关键产出仍须写回 OpenSpec 工件以保持可追踪。轻通道（`/wf-quick` 等）不套用。
 
+### 集成说明
+
+这些是从常驻块下沉到此处的参考细节（不必每轮加载，用到时查）：
+
+- **OpenSpec 命令名**：`openspec-propose/apply-change/archive-change/explore` 是 OpenSpec **skill 名**（`openspec init` 生成、当前版本仍可用），不是斜杠命令文件。新版斜杠命令门面改为 `/opsx:propose` 等；若 `/openspec-propose` 调不到，等价用 `/opsx:propose`（apply/archive/explore 同理）。
+- **config.yaml 归属**：它是 OpenSpec 原生文件，`schema/context/rules` 会被 OpenSpec CLI 读取并注入工件指令；而 `risk_triggers/quick_change_criteria/commit_checkpoints` 是**本工作流私有键**，OpenSpec 不感知、不校验，仅由 wf-* 流程执行。
+- **多方共写文件**：`AGENTS.md` / `.claude/CLAUDE.md` 由本工作流（`<!-- agentic-workflow:start/end -->` marker）与 `openspec update`/`init`（OpenSpec 自己的 marker）共同管理。两套 marker 不同、可共存，但跑 `openspec update` 后建议确认本工作流块未被影响。
+- **GStack 安装方式**：见上方「推荐安装 GStack」的 `git clone … ./setup` 命令。
+
 ### 切换档位
 
 项目类型变了？用 `/wf-install` 命令，AI 会检测当前档位并引导切换。

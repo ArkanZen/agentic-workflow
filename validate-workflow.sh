@@ -208,7 +208,7 @@ check_workflow_strategy_docs() {
   missing=()
   grep -q "高风险逃逸检查" "$script_dir/templates/claude/commands/wf-quick.md" 2>/dev/null || missing+=("wf-quick 高风险逃逸检查")
   grep -q "risk_triggers" "$script_dir/templates/claude/commands/wf-small.md" 2>/dev/null || missing+=("wf-small risk_triggers")
-  grep -q "/review" "$script_dir/templates/claude/commands/wf-complex.md" 2>/dev/null || missing+=("wf-complex 实现后 review")
+  grep -qE "实现完成后执行代码审查|/review" "$script_dir/templates/claude/commands/wf-complex.md" 2>/dev/null || missing+=("wf-complex 实现后 review")
   grep -q "/plan-ceo-review" "$script_dir/templates/claude/commands/wf-plan.md" 2>/dev/null || missing+=("wf-plan 产品审查")
   grep -q "安全/数据口径风险" "$script_dir/templates/claude/commands/wf-debug.md" 2>/dev/null || missing+=("wf-debug 记录升级建议")
   if [[ "${#missing[@]}" -eq 0 ]]; then

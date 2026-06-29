@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.0 - 2026-06-29
+
+跟进 GStack / Superpowers / OpenSpec 上游迭代后的对齐（基于多 agent 核实结论）。
+
+- **修复 GStack 命令映射（核心）**：原"按宿主二分"（Claude 裸名 / Codex 加 `/gstack-` 前缀）是错误模型——GStack 命名实际由用户安装偏好 `skill_prefix`（flat / namespaced）决定，对所有宿主一致。`install.sh` 新增 `detect_gstack_prefix`，安装时探测真实命名模式（文件系统 + `gstack-config` 兜底），把**探测到的真实命令名**写入 manifest（新增 `gstackSkillMode` 字段，`gstackCommandMap` 改为按探测结果填充）。CLAUDE.md/AGENTS.md 块与 5 个 config 模板的映射表改为"按安装模式"，并新增**命名归一化规则**和 **`/review` 与 Claude Code 内置命令冲突**的提示。
+- **接入既有 Superpowers skill（6.x 验证不破）**：`/wf-finish` 接 `finishing-a-development-branch`（代码集成 merge/PR/cleanup）；`wf-complex` 实现段接 `subagent-driven-development`、审查反馈接 `receiving-code-review`；`wf-small` gate 反馈接 `receiving-code-review`。
+- **OpenSpec 集成说明（文档澄清，不改行为）**：CLAUDE.md/AGENTS.md 块新增说明——`openspec-*` 是 OpenSpec skill 名（新斜杠门面为 `/opsx:*`，可等价替用）；`config.yaml` 的 `risk_triggers/quick_change_criteria/commit_checkpoints` 是工作流私有键、OpenSpec 不感知；`AGENTS.md`/`CLAUDE.md` 为多方共写文件，`openspec update` 会按其自身 marker 改写。
+
 ## 1.5.0 - 2026-06-29
 
 - 新增 **`/wf-uninstall`**：卸载当前项目的工作流（OpenSpec + GStack 受控文件），**保留全局 `/wf-install`** 和你的 openspec 内容。

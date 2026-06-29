@@ -31,4 +31,6 @@ description: 显式关闭当前工作流，宣告完成或切换。
      - 选项 B：放弃此 change（运行 `openspec abandon <change-name>`，再删除 `.wf-active`）
    - 按用户选择执行，宣告结果
 
-4. 宣告工作流已关闭。若用户有后续意图，提示可直接输入下一个 `/wf-*` 命令。
+4. **代码集成（有代码改动且用户确认完成时）**：加载 `superpowers:finishing-a-development-branch`，按其结构化选项决定 merge / 开 PR / cleanup。该 skill 负责 git 分支收尾，与本命令的 `.wf-active` 状态管理互补——先按上面处理 change/状态，再用它处理代码集成。若 Superpowers 不可用，说明缺失并降级为手动提示用户选择合入方式。
+
+5. 宣告工作流已关闭。若用户有后续意图，提示可直接输入下一个 `/wf-*` 命令。

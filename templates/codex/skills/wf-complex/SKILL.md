@@ -86,8 +86,8 @@ conditional_reviews:
    - design 顶部 gate 状态摘要
    - tasks.md 中的 checkbox 清单摘要（已经过 writing-plans 细化）
 7. 使用 UI 交互询问用户是否确认该设计和 tasks；用户确认前不得实现。
-8. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。
-9. 实现完成后执行 `/gstack-review`；若审查阻断，先修复再进入验收。
+8. 用户确认后，执行 `/openspec-apply-change` 实现；不得绕过该 workflow 直接实现。tasks.md 拆出多个相对独立的实现任务时，可加载 `superpowers:subagent-driven-development` 在当前会话内按独立任务推进。
+9. 实现完成后执行代码审查（命令名见 Host 命令映射/manifest；namespaced 用 `/gstack-review`）；**收到审查反馈后加载 `superpowers:receiving-code-review`，先技术核实再落实，不盲目照办**；若审查阻断，先修复再进入验收。
 10. 若命中 Web 流程风险，执行 `/gstack-qa` 或说明降级验证方式。
 11. 完成后加载并执行 `superpowers:verification-before-completion` 验收，并在结果中说明已验证项。
 12. 验证通过后同步 `tasks.md` 勾选状态；若存在无法确认完成的任务，先告知用户并保留未勾选状态。

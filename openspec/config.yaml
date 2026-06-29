@@ -1,13 +1,15 @@
 schema: spec-driven
 # vibe 模式 — 轻量快速，适合个人项目、原型验证，无 design gate
 # agentic-workflow-tier: vibe
-# agentic-workflow-version: 1.5.0
+# agentic-workflow-version: 1.6.0
 
 context: |
   完整项目上下文见 openspec/specs/project.md。
   AI 在生成每个工件时须先读取该文件。
-  宿主命令映射：Claude Code 使用 /plan-eng-review、/plan-design-review、/cso、/review；
-  Codex App 使用 /gstack-plan-eng-review、/gstack-plan-design-review、/gstack-cso、/gstack-review。
+  GStack 命令名按安装模式（flat / namespaced）而非宿主：flat 用 /plan-eng-review、/cso、/review 等；
+  namespaced 用 /gstack-plan-eng-review、/gstack-cso、/gstack-review 等。本机实际名见
+  .agentic-workflow/manifest.json 的 gstackCommandMap / gstackSkillMode；模板里命令名为占位，
+  按本机模式加/去 /gstack- 前缀。⚠ flat 模式下 /review 与 Claude Code 内置 /review 冲突，工作区 diff 审查改用 /code-review。
 
   ## 文件命名规范
   - 设计文档（docs/ 下的独立 spec 文档、设计稿等）文件名使用中文描述，

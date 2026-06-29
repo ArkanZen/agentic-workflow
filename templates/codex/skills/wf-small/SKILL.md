@@ -75,7 +75,7 @@ conditional_skills:
 2. 将用户输入作为需求背景，不重复询问已说明的信息
 3. 对照 `risk_triggers` 判断本次变更命中的风险类型，并在首轮摘要中用最多 6 行轻量表格列出结果。表格格式：`| 风险 | 命中 | 触发能力 |`；风险只覆盖架构/UI/安全/测试/数据口径/浏览器验证，理由只在必要时用不超过 12 个字补充。
 4. 执行 `/openspec-propose`，生成 proposal、按风险触发的 design gate 和 tasks；不得手写替代 proposal 流程。
-5. 若任一 gate 阻断，先根据审查意见修改 proposal/design，再继续
+5. 若任一 gate 阻断，处理审查意见时加载 `superpowers:receiving-code-review`（先技术核实再改，不盲从），据此修改 proposal/design 后再继续
 6. 任务上下文收集（展示结果前执行）：
    运行 `git diff --stat HEAD` 获取最近修改的文件列表；从 proposal 变更描述中提取关键词，grep 找到相关源文件路径。
    tasks.md 中每个任务须引用具体文件路径（若能确定），避免泛化描述。

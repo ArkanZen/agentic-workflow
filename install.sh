@@ -121,6 +121,34 @@ json_escape() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
 
+# 探测某宿主 skills 目录里 GStack 的命名模式：namespaced（/gstack-*）/ flat（裸名）/ unknown
+# GStack 命名由用户安装偏好 skill_prefix 决定（对所有宿主一致），不由宿主区分
+detect_gstack_prefix() {
+  local skills_dir="$1" cfg val
+  # 1. 文件系统探测（最鲁棒，直接看实际落点）
+  if [[ -e "$skills_dir/gstack-review" || -e "$skills_dir/gstack-cso" ]]; then
+    echo "namespaced"; return
+  fi
+  if [[ -e "$skills_dir/review" || -e "$skills_dir/cso" ]]; then
+    echo "flat"; return
+  fi
+  # 2. gstack-config 兜底
+  for cfg in "$HOME/.gstack/repos/gstack/bin/gstack-config" "$(command -v gstack-config 2>/dev/null || true)"; do
+    if [[ -n "$cfg" && -x "$cfg" ]]; then
+      val="$("$cfg" get skill_prefix 2>/dev/null || true)"
+      [[ "$val" == "true"  ]] && { echo "namespaced"; return; }
+      [[ "$val" == "false" ]] && { echo "flat"; return; }
+    fi
+  done
+  echo "unknown"
+}
+
+# 按命名模式返回某个 GStack 审查命令名（unknown 视为 flat，即 GStack 官方默认）
+gstack_cmd() {
+  local mode="$1" base="$2"
+  if [[ "$mode" == "namespaced" ]]; then echo "/gstack-$base"; else echo "/$base"; fi
+}
+
 # 检测 agentic-workflow 仓库的 GitHub 远程 URL，供 manifest 写入 sourceRepo
 # 返回 HTTPS URL（去 .git 后缀），无法检测时返回空字符串
 detect_source_repo() {
@@ -199,18 +227,25 @@ write_manifest() {
     printf '    "claude": %s,\n' "$install_claude"
     printf '    "codex": %s\n' "$install_codex"
     printf '  },\n'
+    local mode_claude mode_codex
+    mode_claude="$(detect_gstack_prefix "$HOME/.claude/skills")"
+    mode_codex="$(detect_gstack_prefix "$HOME/.codex/skills")"
+    printf '  "gstackSkillMode": {\n'
+    printf '    "claude": "%s",\n' "$mode_claude"
+    printf '    "codex": "%s"\n' "$mode_codex"
+    printf '  },\n'
     printf '  "gstackCommandMap": {\n'
     printf '    "claude": {\n'
-    printf '      "engineeringReview": "/plan-eng-review",\n'
-    printf '      "designReview": "/plan-design-review",\n'
-    printf '      "securityReview": "/cso",\n'
-    printf '      "codeReview": "/review"\n'
+    printf '      "engineeringReview": "%s",\n' "$(gstack_cmd "$mode_claude" plan-eng-review)"
+    printf '      "designReview": "%s",\n'      "$(gstack_cmd "$mode_claude" plan-design-review)"
+    printf '      "securityReview": "%s",\n'    "$(gstack_cmd "$mode_claude" cso)"
+    printf '      "codeReview": "%s"\n'         "$(gstack_cmd "$mode_claude" review)"
     printf '    },\n'
     printf '    "codex": {\n'
-    printf '      "engineeringReview": "/gstack-plan-eng-review",\n'
-    printf '      "designReview": "/gstack-plan-design-review",\n'
-    printf '      "securityReview": "/gstack-cso",\n'
-    printf '      "codeReview": "/gstack-review"\n'
+    printf '      "engineeringReview": "%s",\n' "$(gstack_cmd "$mode_codex" plan-eng-review)"
+    printf '      "designReview": "%s",\n'      "$(gstack_cmd "$mode_codex" plan-design-review)"
+    printf '      "securityReview": "%s",\n'    "$(gstack_cmd "$mode_codex" cso)"
+    printf '      "codeReview": "%s"\n'         "$(gstack_cmd "$mode_codex" review)"
     printf '    }\n'
     printf '  },\n'
     printf '  "files": [\n'
@@ -817,6 +852,11 @@ render_workflow_block() {
 - \`/openspec-archive-change\` — 归档变更
 - \`/openspec-explore\` — 探索思考
 
+### OpenSpec 集成说明
+- \`openspec-propose/apply-change/archive-change/explore\` 是 OpenSpec **skill 名**（由 \`openspec init\` 生成、当前版本仍可用），不是斜杠命令文件。OpenSpec 新版的斜杠命令门面已改为 \`/opsx:propose\` 等；若 \`/openspec-propose\` 调用不到，等价使用 \`/opsx:propose\`（apply/archive/explore 同理）。
+- \`openspec/config.yaml\` 是 OpenSpec 原生文件，其中 \`schema/context/rules\` 会被 OpenSpec CLI 读取并注入工件指令；而 \`risk_triggers/quick_change_criteria/commit_checkpoints\` 是**本工作流私有键**，OpenSpec 不感知、不校验，仅由 wf-* 流程自己执行。
+- \`AGENTS.md\` / \`.claude/CLAUDE.md\` 为**多方共写**文件：本工作流按 \`<!-- agentic-workflow:start/end -->\` marker 管理自己的块；\`openspec update\`/\`init\` 会按 OpenSpec 自己的 marker 改写这两个文件。两套 marker 不同、可共存，但跑 \`openspec update\` 后建议确认本工作流块未被影响。
+
 ### 强制依赖加载规则
 当工作流文档出现 \`required_skills\`、\`required_workflows\`、\`required_reviews\`、\`conditional_skills\`，或明确写出 \`superpowers:*\`、\`openspec-*\`、\`/gstack-*\`、\`/plan-*\` 等依赖时，执行者必须先加载或执行对应 skill/workflow/review，再进入下一步。
 
@@ -849,15 +889,21 @@ WORKFLOWBLOCK
 
   cat << 'WORKFLOWBLOCK'
 
-### Host 命令映射
-`openspec/config.yaml` 中的 gate 规则使用通用审查名称；执行时按宿主映射：
+### GStack 命令名（按安装模式，不是按宿主）
+GStack 命令名取决于安装时选择的 **skill 命名模式**（`flat` / `namespaced`），由用户偏好 `skill_prefix` 决定，**对 Claude Code 和 Codex App 一视同仁**——不由宿主区分。
 
-| 审查动作 | Claude Code | Codex App |
+| 审查动作 | flat 模式 | namespaced 模式 |
 |------|------|------|
 | 工程审查 | `/plan-eng-review` | `/gstack-plan-eng-review` |
 | UI/设计审查 | `/plan-design-review` | `/gstack-plan-design-review` |
 | 安全审查 | `/cso` | `/gstack-cso` |
 | 代码审查 | `/review` | `/gstack-review` |
+
+**本机实际命令名以 `.agentic-workflow/manifest.json` 的 `gstackCommandMap` / `gstackSkillMode` 为准**（安装时已探测写入）。
+
+**命名归一化规则**：本工作流各 wf-* 模板中出现的 GStack 命令名（无论写成 `/cso` 还是 `/gstack-cso`）均为占位写法。执行时按本机模式归一：namespaced → 一律加 `/gstack-` 前缀；flat → 一律去掉前缀。无法确定模式时，先探测安装目录里存在的是 `gstack-review` 还是 `review`，再决定，不要盲目照模板字面调用。
+
+> ⚠️ **`/review` 冲突**：flat 模式下 GStack 的 `/review` 与 Claude Code 内置 `/review`（审 GitHub PR）同名。做代码审查时确认调用的是 GStack 版本（或工作区 diff 用 `/code-review`）；namespaced 模式（`/gstack-review`）无此冲突。
 
 ### Gate 规则
 见 openspec/config.yaml。design.md 顶部工程审查状态为「阻断」时，

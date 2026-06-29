@@ -50,7 +50,9 @@ conditional_reviews:
     - /gstack-qa
 ```
 
-若宿主环境没有对应 skill 或审查命令，必须先明确说明缺失项和影响，再等待用户确认是否降级继续；不得声称已加载或已审查。
+若宿主环境没有对应 skill 或审查命令，按工作流块「审查降级链」降级（GStack/Superpowers 为增强项；Codex App 无 Claude 原生 /code-review、/security-review 等价物时，降级为结构化自检清单），并明确说明降级；不得声称已加载或已审查。
+
+> **可选编排**：阶段多、风险高时，可按工作流块「Agent 角色编排」表把探索/设计/实现/审查交给专职子 agent；不可用则主线程顺序执行并说明。
 
 ## Codex App 交互规则
 

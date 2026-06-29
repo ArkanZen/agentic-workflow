@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.0 - 2026-06-29
+
+降耦合：把 GStack/Superpowers 从"硬依赖"降级为"增强项 + 原生兜底"，并引入可选的 Agent 角色编排。
+
+- **审查降级链（GStack/Superpowers 为增强项，非硬依赖）**：CLAUDE.md/AGENTS.md 块新增「审查降级链」——代码审查 GStack `/review` → 不可用降级 Claude 内置 `/code-review`；安全审查 `/cso` → 降级 `/security-review`；工程/设计审查无原生等价 → 降级结构化自检清单并标注"未经 GStack 审查"；Superpowers 不可用降级到内置等价或方法论清单。任何降级必须说明。
+- **manifest 记录工具可用性与兜底**：`install.sh` 在 manifest 新增 `tooling`（gstack/superpowers 各宿主安装状态）与 `reviewFallback`（各宿主审查兜底链），供 AI 判断是否走兜底。
+- **Agent 角色编排（可选增强）**：块内新增角色映射表（探索→Explore/Plan、设计→tech-design、实现→subagent-driven-development、审查→code-reviewer、并行→dispatching-parallel-agents），仅对 wf-complex 这类多阶段变更推荐；子 agent/skill 不可用时降级到主线程顺序执行。wf-complex（双宿主）加入可选编排与降级链指引。
+- **OpenSpec opsx/schema 跟进**：延续 v1.6.0 的 `opsx:*` 等价说明（命令门面演进跟踪）。
+
 ## 1.6.0 - 2026-06-29
 
 跟进 GStack / Superpowers / OpenSpec 上游迭代后的对齐（基于多 agent 核实结论）。

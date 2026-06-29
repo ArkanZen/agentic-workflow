@@ -417,6 +417,22 @@ GStack gate 使用同一套语义，但命令名取决于 GStack 的 **skill 命
 
 > ⚠️ `flat` 模式下 GStack 的 `/review` 与 Claude Code 内置 `/review`（审 GitHub PR）同名；做代码审查时确认调用的是 GStack 版本，或用 `/code-review` 审工作区 diff，`namespaced` 模式（`/gstack-review`）无此冲突。
 
+### 审查降级链（GStack / Superpowers 为增强项，非硬依赖）
+
+GStack 与 Superpowers 不是硬依赖，缺失时按降级链执行，任何降级都会显式说明：
+
+| 审查 | 首选（GStack） | 兜底（无 GStack） |
+|------|------|------|
+| 代码审查 | `/review` / `/gstack-review` | Claude Code 内置 `/code-review`（Codex → 结构化自检清单） |
+| 安全审查 | `/cso` / `/gstack-cso` | Claude Code 内置 `/security-review`（Codex → 自检清单） |
+| 工程/设计审查 | `/plan-eng-review` 等 | 无原生等价 → 结构化自检清单，标注「未经 GStack 审查」 |
+
+各工具本机可用性与兜底链记录在 `manifest.json` 的 `tooling` / `reviewFallback`。
+
+### Agent 角色编排（可选增强）
+
+复杂变更（`/wf-complex`）可把各阶段交给专职子 agent：探索→Explore/Plan、设计→tech-design、实现→`superpowers:subagent-driven-development`、审查→code-reviewer、并行无依赖任务→`superpowers:dispatching-parallel-agents`。**可选**，子 agent 不可用时降级到主线程顺序执行；轻通道（`/wf-quick` 等）不套用。
+
 ### 切换档位
 
 项目类型变了？用 `/wf-install` 命令，AI 会检测当前档位并引导切换。

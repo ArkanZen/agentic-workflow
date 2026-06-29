@@ -248,6 +248,20 @@ write_manifest() {
     printf '      "codeReview": "%s"\n'         "$(gstack_cmd "$mode_codex" review)"
     printf '    }\n'
     printf '  },\n'
+    # 工具可用性与审查降级链：gstack/superpowers 为增强项，不可用时按 fallback 降级
+    local gs_claude=false gs_codex=false sp_claude=false sp_codex=false
+    if [[ -d "$HOME/.claude/skills/gstack" || -d "$HOME/.gstack/repos/gstack" ]]; then gs_claude=true; fi
+    if [[ -d "$HOME/.codex/skills/gstack" ]] || compgen -G "$HOME/.codex/skills/gstack-*" >/dev/null 2>&1; then gs_codex=true; fi
+    if [[ -d "$HOME/.claude/plugins/cache/claude-plugins-official/superpowers" ]]; then sp_claude=true; fi
+    if compgen -G "$HOME/.codex/plugins/cache/openai-curated/superpowers/*" >/dev/null 2>&1; then sp_codex=true; fi
+    printf '  "tooling": {\n'
+    printf '    "gstack": { "claude": %s, "codex": %s },\n' "$gs_claude" "$gs_codex"
+    printf '    "superpowers": { "claude": %s, "codex": %s }\n' "$sp_claude" "$sp_codex"
+    printf '  },\n'
+    printf '  "reviewFallback": {\n'
+    printf '    "claude": { "codeReview": "/code-review", "securityReview": "/security-review", "engineeringReview": "结构化自检清单", "designReview": "结构化自检清单" },\n'
+    printf '    "codex":  { "codeReview": "结构化自检清单", "securityReview": "结构化自检清单", "engineeringReview": "结构化自检清单", "designReview": "结构化自检清单" }\n'
+    printf '  },\n'
     printf '  "files": [\n'
     comma=""
     while IFS= read -r rel; do
@@ -904,6 +918,27 @@ GStack 命令名取决于安装时选择的 **skill 命名模式**（`flat` / `n
 **命名归一化规则**：本工作流各 wf-* 模板中出现的 GStack 命令名（无论写成 `/cso` 还是 `/gstack-cso`）均为占位写法。执行时按本机模式归一：namespaced → 一律加 `/gstack-` 前缀；flat → 一律去掉前缀。无法确定模式时，先探测安装目录里存在的是 `gstack-review` 还是 `review`，再决定，不要盲目照模板字面调用。
 
 > ⚠️ **`/review` 冲突**：flat 模式下 GStack 的 `/review` 与 Claude Code 内置 `/review`（审 GitHub PR）同名。做代码审查时确认调用的是 GStack 版本（或工作区 diff 用 `/code-review`）；namespaced 模式（`/gstack-review`）无此冲突。
+
+### 审查降级链（GStack / Superpowers 为增强项，非硬依赖）
+GStack 与 Superpowers 是**增强项**，缺失时按下面降级链执行；任何降级都必须明确说明，不得声称完成了未做的审查：
+- **代码审查**：GStack `/review`（namespaced 加 `/gstack-`）→ 不可用时 Claude Code 内置 `/code-review`（Codex 无原生等价 → 结构化自检清单）
+- **安全审查**：GStack `/cso` → 不可用时 Claude Code 内置 `/security-review`（Codex → 自检清单）
+- **工程审查 `/plan-eng-review`、设计审查 `/plan-design-review`**：无原生等价 → 降级为结构化自检清单（按 design 维度逐项核对），并标注「未经 GStack 审查」
+- **Superpowers skill 不可用**：降级到内置等价能力或方法论清单（如 systematic-debugging → 手动二分定位），同样说明
+本机各工具可用性见 \`.agentic-workflow/manifest.json\` 的 \`tooling\` / \`reviewFallback\`。
+
+### Agent 角色编排（可选增强）
+复杂变更可把各阶段交给专职子 agent，而非单线程串到底（**可选**；子 agent 类型不存在时降级到主线程顺序执行并说明）：
+
+| 阶段 | 角色 | Claude Code 机制 | 通用兜底 |
+|------|------|------|------|
+| 探索 | 调研员 | Explore / Plan 子 agent | 主线程顺序探索 |
+| 设计 | 架构师 | tech-design 子 agent + superpowers:writing-plans | 主线程 + writing-plans |
+| 实现 | 实现者 | superpowers:subagent-driven-development | 顺序实现 |
+| 审查 | 审查员 | code-reviewer 子 agent / 审查降级链 | 审查降级链 |
+| 并行无依赖任务 | — | superpowers:dispatching-parallel-agents | 顺序执行 |
+
+规则：编排仅对 wf-complex 这类多阶段变更推荐，wf-quick/小改动不要套用；只有**无共享状态、无顺序依赖**的任务才并行；子 agent / skill 不可用时按「通用兜底」列执行并说明降级。
 
 ### Gate 规则
 见 openspec/config.yaml。design.md 顶部工程审查状态为「阻断」时，

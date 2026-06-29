@@ -52,7 +52,7 @@ conditional_reviews:
 
 若宿主环境没有对应 skill 或审查命令，按工作流块「审查降级链」降级（GStack/Superpowers 为增强项；Codex App 无 Claude 原生 /code-review、/security-review 等价物时，降级为结构化自检清单），并明确说明降级；不得声称已加载或已审查。
 
-> **可选编排**：阶段多、风险高时，可按工作流块「Agent 角色编排」表把探索/设计/实现/审查交给专职子 agent；不可用则主线程顺序执行并说明。
+> **可选编排（临场优化，非正式契约）**：阶段多、风险高时，可酌情把探索/设计/实现/审查交给专职子 agent（探索→调研、设计→架构、实现→`superpowers:subagent-driven-development`、审查→审查 agent、无依赖任务→`superpowers:dispatching-parallel-agents`）；不必要或不可用则主线程顺序执行。子 agent 内部过程不落盘，关键产出须写回 OpenSpec 工件以保持可追踪。
 
 ## Codex App 交互规则
 

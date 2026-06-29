@@ -429,9 +429,9 @@ GStack 与 Superpowers 不是硬依赖，缺失时按降级链执行，任何降
 
 各工具本机可用性与兜底链记录在 `manifest.json` 的 `tooling` / `reviewFallback`。
 
-### Agent 角色编排（可选增强）
+### Agent 角色编排（wf-complex 内的临场提示）
 
-复杂变更（`/wf-complex`）可把各阶段交给专职子 agent：探索→Explore/Plan、设计→tech-design、实现→`superpowers:subagent-driven-development`、审查→code-reviewer、并行无依赖任务→`superpowers:dispatching-parallel-agents`。**可选**，子 agent 不可用时降级到主线程顺序执行；轻通道（`/wf-quick` 等）不套用。
+`/wf-complex` 内有一句**可选**提示：阶段多、风险高时可酌情把探索/设计/实现/审查交给专职子 agent（Explore/Plan、tech-design、`subagent-driven-development`、code-reviewer、`dispatching-parallel-agents`）。它是**临场优化、非正式契约**，不进常驻的 CLAUDE.md/AGENTS.md 块（避免轻通道也常驻加载）；子 agent 内部过程不落盘，关键产出仍须写回 OpenSpec 工件以保持可追踪。轻通道（`/wf-quick` 等）不套用。
 
 ### 切换档位
 

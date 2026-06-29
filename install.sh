@@ -29,6 +29,8 @@ NO_INTERACTIVE=false
 SWITCH_MODE=false
 UPGRADE_MODE=false
 GLOBAL_MODE=false
+UNINSTALL_MODE=false
+NO_BACKUP=false
 ARG_TYPE=""
 ARG_TARGET=""
 
@@ -44,6 +46,8 @@ while [[ $# -gt 0 ]]; do
     --upgrade)        UPGRADE_MODE=true; shift ;;
     --switch)         SWITCH_MODE=true; shift ;;
     --global)         GLOBAL_MODE=true; shift ;;
+    --uninstall)      UNINSTALL_MODE=true; shift ;;
+    --no-backup)      NO_BACKUP=true; shift ;;
     --version)        echo "$WORKFLOW_VERSION"; exit 0 ;;
     -*)               err "未知参数: $1"; exit 1 ;;
     *)                ARG_TARGET="$1"; shift ;;  # 位置参数：目标目录
@@ -311,6 +315,104 @@ if [[ ! -d "$TARGET_DIR" ]]; then
   exit 1
 fi
 ok "目标目录: $TARGET_DIR"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# --uninstall 模式：移除当前项目的工作流文件，绝不触碰 $HOME（全局 /wf-install 保留）
+# ══════════════════════════════════════════════════════════════════════════════
+if [[ "$UNINSTALL_MODE" == "true" ]]; then
+  step "卸载工作流（仅当前项目）"
+
+  # 收集受管文件（复用安装清单同源的 glob 逻辑，不依赖 manifest 格式）
+  MANAGED=()
+  while IFS= read -r rel; do
+    [[ -n "$rel" ]] && MANAGED+=("$rel")
+  done < <(collect_manifest_files "$TARGET_DIR")
+
+  if [[ ${#MANAGED[@]} -eq 0 && ! -f "$TARGET_DIR/.agentic-workflow/manifest.json" ]]; then
+    warn "未检测到工作流安装，无需卸载"
+    exit 0
+  fi
+
+  info "目标项目: $TARGET_DIR"
+  info "全局 /wf-install（~/.claude、~/.codex）不受影响"
+  echo -e "  ${BOLD}将移除：${RESET}"
+  for rel in "${MANAGED[@]}"; do
+    case "$rel" in
+      .claude/CLAUDE.md|AGENTS.md) echo -e "    ${YELLOW}~${RESET} ${rel}（仅移除工作流块，保留其余内容）" ;;
+      *)                           echo -e "    ${RED}✗${RESET} $rel" ;;
+    esac
+  done
+  echo -e "    ${RED}✗${RESET} .agentic-workflow/manifest.json、.wf-active（若存在）"
+  echo -e "  ${BOLD}将保留：${RESET}openspec/changes、openspec/specs、openspec/archive 等你的内容"
+
+  if [[ "$NO_INTERACTIVE" != "true" ]]; then
+    ask_yn "确认卸载当前项目工作流？" "n" || { info "已取消"; exit 0; }
+  fi
+
+  # 备份受管文件（默认开启，--no-backup 可关）
+  backup_dir=""
+  if [[ "$NO_BACKUP" != "true" ]]; then
+    ts="$(date -u '+%Y%m%dT%H%M%SZ')"
+    backup_dir="$TARGET_DIR/.agentic-workflow/uninstall-backup-$ts"
+    for rel in "${MANAGED[@]}"; do
+      src="$TARGET_DIR/$rel"
+      [[ -e "$src" ]] || continue
+      dest="$backup_dir/$rel"
+      mkdir -p "$(dirname "$dest")"
+      cp -R "$src" "$dest"
+    done
+    if [[ -f "$TARGET_DIR/.agentic-workflow/manifest.json" ]]; then
+      mkdir -p "$backup_dir/.agentic-workflow"
+      cp "$TARGET_DIR/.agentic-workflow/manifest.json" "$backup_dir/.agentic-workflow/manifest.json"
+    fi
+    ok "已备份到 ${backup_dir#"$TARGET_DIR"/}"
+  fi
+
+  # 共享文件：仅剥离受控块和顶部 tier/version 标记，保留其余内容
+  for shared in ".claude/CLAUDE.md" "AGENTS.md"; do
+    f="$TARGET_DIR/$shared"
+    [[ -f "$f" ]] || continue
+    tmp="$(mktemp)"
+    awk -v start="<!-- agentic-workflow:start -->" -v end="<!-- agentic-workflow:end -->" '
+      $0 == start { in_block=1; next }
+      $0 == end && in_block { in_block=0; next }
+      in_block { next }
+      /^# agentic-workflow-tier:/ { next }
+      /^# agentic-workflow-version:/ { next }
+      { print }
+    ' "$f" > "$tmp"
+    mv "$tmp" "$f"
+    ok "$shared 已移除工作流块"
+  done
+
+  # 完全托管文件：直接删除（含 wf-install 项目副本；全局副本在 \$HOME 不受影响）
+  for rel in "${MANAGED[@]}"; do
+    case "$rel" in
+      .claude/CLAUDE.md|AGENTS.md) continue ;;
+    esac
+    p="$TARGET_DIR/$rel"
+    if [[ -e "$p" ]]; then rm -f "$p"; ok "已删除 $rel"; fi
+  done
+
+  # 其余托管痕迹
+  [[ -f "$TARGET_DIR/.wf-active" ]] && { rm -f "$TARGET_DIR/.wf-active"; ok "已删除 .wf-active"; }
+  [[ -f "$TARGET_DIR/.agentic-workflow/manifest.json" ]] && { rm -f "$TARGET_DIR/.agentic-workflow/manifest.json"; ok "已删除 .agentic-workflow/manifest.json"; }
+
+  # 清理空目录（rmdir 仅在目录为空时成功，安全）
+  find "$TARGET_DIR/.codex/skills" -type d -name 'wf-*' -empty -delete 2>/dev/null || true
+  rmdir "$TARGET_DIR/.codex/skills" 2>/dev/null || true
+  rmdir "$TARGET_DIR/.codex" 2>/dev/null || true
+  rmdir "$TARGET_DIR/.claude/commands" 2>/dev/null || true
+  rmdir "$TARGET_DIR/openspec/specs" 2>/dev/null || true
+  rmdir "$TARGET_DIR/openspec" 2>/dev/null || true
+
+  echo ""
+  echo -e "  ${GREEN}${BOLD}卸载完成。${RESET}"
+  echo -e "  全局 /wf-install 已保留：~/.claude/commands/wf-install.md、~/.codex/skills/wf-install/。"
+  [[ -n "$backup_dir" ]] && echo -e "  备份位于 ${backup_dir#"$TARGET_DIR"/}，确认无误后可删除。"
+  echo ""
+  exit 0
+fi
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 第二步：硬环境检查（不通过则退出）
@@ -585,9 +687,9 @@ echo ""
 echo -e "  将在 ${BOLD}$TARGET_DIR${RESET} 安装："
 echo -e "    • openspec/config.yaml（$PROJECT_TYPE 模板）"
 echo -e "    • openspec/specs/project.md 和 system.md（如不存在则创建 stub）"
-[[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/commands/wf-{quick,small,complex,debug,plan}.md + wf-install.md"
+[[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/commands/wf-{quick,small,complex,debug,plan}.md + wf-install.md + wf-uninstall.md"
 [[ "$INSTALL_CLAUDE" == "true" ]] && echo -e "    • .claude/CLAUDE.md（如不存在则创建）"
-[[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • .codex/skills/wf-{quick,small,complex,debug,plan}/ + wf-install/"
+[[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • .codex/skills/wf-{quick,small,complex,debug,plan}/ + wf-install/ + wf-uninstall/"
 [[ "$INSTALL_CODEX"  == "true" ]] && echo -e "    • 检测官方 GStack Codex skills（未安装则提示官方安装命令，不复制旧版内置 GStack skills）"
 echo -e "    • AGENTS.md workflow 段落（如不存在则创建）"
 echo -e "    • .agentic-workflow/manifest.json（记录安装清单和 host 命令映射）"
@@ -709,6 +811,7 @@ render_workflow_block() {
 - \`/wf-plan\` — 产品/架构方案（先评估是否值得做）
 - \`/wf-finish\` — 显式关闭当前工作流，宣告完成或切换
 - \`/wf-status\` — 查看当前活跃工作流状态，支持恢复或取消
+- \`/wf-uninstall\` — 卸载当前项目的工作流（保留全局 /wf-install）
 - \`/openspec-propose\` — 完整通道（proposal + design gate + tasks）
 - \`/openspec-apply-change\` — 执行 tasks 实现代码
 - \`/openspec-archive-change\` — 归档变更
@@ -939,6 +1042,8 @@ if [[ "$INSTALL_CLAUDE" == "true" ]]; then
     "$TARGET_DIR/.claude/commands/wf-status.md" ".claude/commands/wf-status.md"
   copy_file "$TEMPLATES/claude/commands/wf-install.md" \
     "$TARGET_DIR/.claude/commands/wf-install.md" ".claude/commands/wf-install.md"
+  copy_file "$TEMPLATES/claude/commands/wf-uninstall.md" \
+    "$TARGET_DIR/.claude/commands/wf-uninstall.md" ".claude/commands/wf-uninstall.md"
 
   if [[ ! -f "$TARGET_DIR/.claude/CLAUDE.md" ]]; then
     mkdir -p "$TARGET_DIR/.claude"
@@ -989,6 +1094,8 @@ if [[ "$INSTALL_CODEX" == "true" ]]; then
     "$TARGET_DIR/.codex/skills/wf-status" ".codex/skills/wf-status"
   copy_dir "$TEMPLATES/codex/skills/wf-install" \
     "$TARGET_DIR/.codex/skills/wf-install" ".codex/skills/wf-install"
+  copy_dir "$TEMPLATES/codex/skills/wf-uninstall" \
+    "$TARGET_DIR/.codex/skills/wf-uninstall" ".codex/skills/wf-uninstall"
 fi
 
 # — AGENTS.md ─────────────────────────────────────────────────────────────────

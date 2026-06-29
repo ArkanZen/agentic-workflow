@@ -288,6 +288,9 @@ bash ~/agentic-workflow/install.sh \
 | `--no-interactive` | 完全非交互；全新安装时冲突文件默认跳过，检测到已安装 agentic-workflow 时进入更新模式 |
 | `--upgrade` | 升级受控工作流模板，配合 `--no-interactive` 时覆盖已安装的 wf 命令和 skill |
 | `--switch` | 仅替换 config.yaml，切换档位（不重新安装） |
+| `--global` | 把 `/wf-install` 引导命令装到宿主全局（不针对任何项目） |
+| `--uninstall` | 卸载当前项目的工作流（保留全局 `/wf-install`、保留 openspec 内容） |
+| `--no-backup` | 配合 `--uninstall`：跳过卸载前备份 |
 | `--version` | 输出当前 agentic-workflow 模板版本 |
 
 ### 安装模式怎么选
@@ -298,6 +301,20 @@ bash ~/agentic-workflow/install.sh \
 | 在脚本或 AI 自动化中安装 | `install.sh --type <档位> --target <目录> --no-interactive` |
 | 已安装项目升级模板 | 优先在 Dashboard 中选择 upgrade；命令行场景可在目标项目中运行 `/wf-install` |
 | 项目类型变化，需要换档位 | 优先在 Dashboard 中选择 switch tier；命令行场景可用 `/wf-install` 或 `install.sh --switch` |
+
+### 卸载
+
+在目标项目中运行 `/wf-uninstall`，或命令行直接执行：
+
+```bash
+bash <agentic-workflow-path>/install.sh --uninstall --target <目标项目> --no-interactive
+```
+
+- **删除**：wf-* 命令/skill、`openspec/config.yaml`、`.agentic-workflow/manifest.json`、`.wf-active`。
+- **仅剥离工作流块、保留其余内容**：`.claude/CLAUDE.md`、`AGENTS.md`。
+- **完整保留**：`openspec/changes`、`openspec/specs`、`openspec/archive` 等你的内容。
+- **不受影响**：全局 `/wf-install`（`~/.claude`、`~/.codex`、`~/.agentic-workflow`）——卸载只操作目标项目目录。
+- 默认卸载前备份到 `.agentic-workflow/uninstall-backup-<时间>/`，加 `--no-backup` 可跳过。
 
 ---
 

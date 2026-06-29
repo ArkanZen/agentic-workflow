@@ -5,7 +5,7 @@
 <!-- agentic-workflow:start -->
 ## OpenSpec + GStack 工作流
 <!-- agentic-workflow-tier: vibe -->
-<!-- agentic-workflow-version: 1.4.0 -->
+<!-- agentic-workflow-version: 1.5.0 -->
 
 默认不启用本工作流。仅当用户显式输入 `/wf-*` 或 `/openspec-*` 命令时，才进入 OpenSpec + GStack 流程；普通开发请求按项目常规协作方式处理。
 
@@ -28,6 +28,7 @@
 - `/wf-plan` — 产品/架构方案（先评估是否值得做）
 - `/wf-finish` — 显式关闭当前工作流，宣告完成或切换
 - `/wf-status` — 查看当前活跃工作流状态，支持恢复或取消
+- `/wf-uninstall` — 卸载当前项目的工作流（保留全局 /wf-install）
 - `/openspec-propose` — 完整通道（proposal + design gate + tasks）
 - `/openspec-apply-change` — 执行 tasks 实现代码
 - `/openspec-archive-change` — 归档变更

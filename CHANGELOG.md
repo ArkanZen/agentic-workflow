@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0 - 2026-06-29
+
+- 新增 **`/wf-uninstall`**：卸载当前项目的工作流（OpenSpec + GStack 受控文件），**保留全局 `/wf-install`** 和你的 openspec 内容。
+- `install.sh` 新增 `--uninstall` 模式：删除 wf-* 命令/skill、`openspec/config.yaml`、manifest、`.wf-active`；对 `.claude/CLAUDE.md`、`AGENTS.md` 仅剥离工作流块、保留其余内容；`openspec/changes`、`specs`、`archive` 等用户内容完整保留；**只操作目标项目目录，绝不触碰 `$HOME`**。默认卸载前备份到 `.agentic-workflow/uninstall-backup-<时间>/`，可用 `--no-backup` 关闭。
+- 新增 `wf-uninstall` 模板（Claude + Codex），随项目安装；交互式预览删除/保留清单并确认后执行。
+- 修复 `--uninstall` 预览中变量与全角标点相邻导致的 `unbound variable`（变量引用加花括号）。
+
 ## 1.4.0 - 2026-06-29
 
 - 新增**全局安装**：`/wf-install` 可装到宿主全局（`~/.claude/commands/`、`~/.codex/skills/`），任意新项目无需先跑 install.sh 即可运行 `/wf-install` 安装工作流；不运行则不改动该项目（零入侵）。

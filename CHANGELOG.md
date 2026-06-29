@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 - 2026-06-29
+
+- 新增**全局安装**：`/wf-install` 可装到宿主全局（`~/.claude/commands/`、`~/.codex/skills/`），任意新项目无需先跑 install.sh 即可运行 `/wf-install` 安装工作流；不运行则不改动该项目（零入侵）。
+- `install.sh` 新增 `--global` 模式：写入全局命令/skill 和全局配置 `~/.agentic-workflow/config`（记录 `sourceRepo`、`workflowPath`），不针对任何项目。
+- 新增 `bootstrap.sh`：`curl -fsSL .../bootstrap.sh | bash` 一行安装——自动 clone/更新缓存仓库 `~/.agentic-workflow/repo` 后调 `install.sh --global`。
+- `wf-install` 模板（Claude + Codex）新增「第 0 步：定位工作流仓库」：按 manifest → 全局配置 → 缓存仓库 → 按需 clone 的顺序解析仓库路径，全新项目自动 clone 到缓存，不再每次手输路径。
+
 ## 1.3.5 - 2026-06-22
 
 - 修复 Codex App 端 `/wf-status` 安装失败：v1.3.4 在 install.sh 引用了 `templates/codex/skills/wf-status`，但该模板目录从未创建，导致安装时报 `cp: ... No such file or directory`。补建 `templates/codex/skills/wf-status/SKILL.md`（基于 Codex 版 wf-finish，沿用"优先使用 Codex App UI 交互工具"约定）。

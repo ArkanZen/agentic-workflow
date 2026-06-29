@@ -54,6 +54,37 @@ conditional_commands:
 - 必须执行的命令：版本检测、manifest 读取、安装脚本执行或档位切换命令
 - 预期变更范围：`openspec/config.yaml`、`AGENTS.md`、`.codex/skills/wf-*`、可选 `.claude/commands/wf-*`
 
+## 第 0 步：定位工作流仓库（全局 skill 必读）
+
+本 skill 可能被装在宿主全局（`~/.codex/skills/wf-install/`），此时当前项目可能**还没有** `.agentic-workflow/manifest.json`。执行任何安装/切换/升级前，必须先确定 `<agentic-workflow-path>`（含 `install.sh` 的工作流仓库目录），按以下顺序解析，**找到即停，不要先去问用户**：
+
+```bash
+# 1. 当前项目 manifest 记录的本地路径（已安装项目优先）
+WF_PATH="$(grep -o '"workflowPath"[^,]*' .agentic-workflow/manifest.json 2>/dev/null | sed 's/.*"workflowPath"[[:space:]]*:[[:space:]]*"//;s/"$//')"
+[ -n "$WF_PATH" ] && [ -f "$WF_PATH/install.sh" ] && echo "RESOLVED:$WF_PATH"
+
+# 2. 全局配置记录的本地仓库
+[ -z "$WF_PATH" ] && WF_PATH="$(grep '^workflowPath=' "$HOME/.agentic-workflow/config" 2>/dev/null | cut -d= -f2-)"
+[ -n "$WF_PATH" ] && [ -f "$WF_PATH/install.sh" ] && echo "RESOLVED:$WF_PATH"
+
+# 3. 缓存仓库（存在则 pull 更新后使用）
+if [ -f "$HOME/.agentic-workflow/repo/install.sh" ]; then
+  git -C "$HOME/.agentic-workflow/repo" pull --ff-only 2>/dev/null || true
+  echo "RESOLVED:$HOME/.agentic-workflow/repo"
+fi
+```
+
+若上述三步都没拿到有效路径，则**按需 clone 到缓存目录**：从全局配置或 manifest 读 `sourceRepo`，clone 到 `~/.agentic-workflow/repo`。执行前向用户展示并确认：
+
+```bash
+SRC="$(grep '^sourceRepo=' "$HOME/.agentic-workflow/config" 2>/dev/null | cut -d= -f2-)"
+# 若 SRC 为空，提示用户：缺少源仓库地址，请重新运行 bootstrap 或手动提供仓库路径/地址
+git clone --depth 1 "$SRC" "$HOME/.agentic-workflow/repo"
+# clone 成功后 <agentic-workflow-path> = ~/.agentic-workflow/repo
+```
+
+解析得到的路径即为后文所有 `<agentic-workflow-path>`。**只有当 clone 也失败（无 sourceRepo 或网络/权限问题）时**，才回退到向用户询问本地仓库路径。
+
 ## 第一步：检测当前状态，生成建议但不自动执行
 
 运行 shell 命令检查 `openspec/config.yaml` 是否存在，并读取版本标记和 manifest：

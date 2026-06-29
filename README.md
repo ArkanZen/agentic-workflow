@@ -207,6 +207,30 @@ Dashboard 首次使用建议：
 
 ## 安装
 
+### 方式零：全局安装 `/wf-install`（一次装好，处处可用）
+
+把 `/wf-install` 引导命令装到宿主全局，之后**任意新项目**都能直接运行 `/wf-install` 安装工作流——不再需要先对每个项目跑一次 `install.sh`。
+
+```bash
+# 全新机器：一行 curl 安装（自动 clone 缓存仓库后写入全局命令）
+curl -fsSL https://raw.githubusercontent.com/ArkanZen/agentic-workflow/master/bootstrap.sh | bash
+
+# 本地已有仓库：直接用 --global
+bash ~/agentic-workflow/install.sh --global
+```
+
+它只写入这些文件：
+
+| 文件 | 作用 |
+|------|------|
+| `~/.claude/commands/wf-install.md` | Claude Code 侧全局 `/wf-install` |
+| `~/.codex/skills/wf-install/` | Codex App 侧全局 `wf-install` skill |
+| `~/.agentic-workflow/config` | 记录 `sourceRepo` / 本地仓库路径，供命令按需 clone 或复用 |
+
+**零入侵保证**：全局只多出上面这一个命令，让 `/wf-install` 在所有项目可见。**不运行它就不会改动任何项目**；运行后才在目标项目写 `openspec/config.yaml` 等文件。全新项目首次运行时，命令会按需把仓库 clone 到缓存目录 `~/.agentic-workflow/repo`，无需手输路径。
+
+卸载：删除上述三项（`~/.claude/commands/wf-install.md`、`~/.codex/skills/wf-install/`、`~/.agentic-workflow/`）即可，对已安装项目无影响。
+
 ### 方式一：通过 Dashboard 安装（推荐）
 
 先启动本地 Dashboard：

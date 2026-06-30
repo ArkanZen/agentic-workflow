@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.3 - 2026-06-30
+
+OpenSpec 命令兜底硬化：修复「工作流提示执行 `/openspec-propose`，但宿主未加载 OpenSpec 插件时 `Skill(openspec-propose)` 返回 `Unknown skill` 导致流程中断」的问题。
+
+- **wf-* 模板内联兜底**：在 `wf-small`/`wf-complex`/`wf-quick`（Claude 命令 + Codex skill 共 6 个模板）的步骤入口新增统一规则——下文的 `/openspec-propose`、`/openspec-apply-change`、`/openspec-archive-change`（含 explore）若调用返回 `Unknown skill`，立即改用等价的 `/opsx:propose`、`/opsx:apply`、`/opsx:archive`（explore→`/opsx:explore`）继续，不得中断或声称失败。比 CLAUDE.md 里泛化的「若调不到」更可执行（触发条件写死为 `Unknown skill`，且就近放在流程入口）。
+- **wf-install 用户提示补兜底**：安装完成提示和归档提示中的 `/openspec-propose`、`/openspec-archive-change` 加上「若提示 Unknown skill，用等价的 /opsx:*」括注。
+
 ## 1.7.2 - 2026-06-29
 
 常驻块瘦身 + 预算护栏（守"轻量"初心）：常驻块（CLAUDE.md/AGENTS.md 中每轮都加载的工作流块）从 83 行降到 ~58 行（~3k→~2k tokens），不删任何功能。

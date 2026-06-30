@@ -319,7 +319,7 @@ bash "<agentic-workflow-path>/install.sh" --type <tier> --target <current-dir> -
 安装完成后输出：
 ```
 ✓ 已安装 <tier> 档位。openspec/config.yaml 已生成。
-运行 /openspec-propose 开始第一个变更。
+运行 /openspec-propose 开始第一个变更（若提示 Unknown skill，用等价的 /opsx:propose）。
 ```
 
 ---
@@ -348,7 +348,7 @@ B. 取消（先归档再切换）
 
 若用户选择 B 或取消，中止操作，提示：
 ```
-已取消。请先运行 /openspec-archive-change 归档完成的变更。
+已取消。请先运行 /openspec-archive-change 归档完成的变更（若提示 Unknown skill，用等价的 /opsx:archive）。
 ```
 
 ### 步骤 2：读取当前档位

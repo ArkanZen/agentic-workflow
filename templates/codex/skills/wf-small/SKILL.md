@@ -65,6 +65,8 @@ conditional_skills:
 - 条件 skill：测试风险触发 `superpowers:test-driven-development`
 - 已加载状态：逐项标记已加载 / 未加载并说明降级原因
 
+**OpenSpec 命令兜底**：下文的 `/openspec-propose`、`/openspec-apply-change`、`/openspec-archive-change`（含 explore）均为 OpenSpec **skill 名**。若调用返回 `Unknown skill`，立即改用等价的 `/opsx:propose`、`/opsx:apply`、`/opsx:archive`（explore→`/opsx:explore`）继续，不得中断流程或声称失败。
+
 执行以下步骤：
 1. 读取 openspec/config.yaml 中 commit_checkpoints.start 规则并执行。
    完成后写入 `.wf-active`（确保 git-ignored）：

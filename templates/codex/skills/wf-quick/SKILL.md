@@ -53,6 +53,8 @@ conditional_skills:
 - 条件 skill：明确 bug 时加载 `superpowers:systematic-debugging`；完成前优先加载 `superpowers:verification-before-completion`
 - 已加载状态：逐项标记已加载 / 未加载并说明降级原因
 
+**OpenSpec 命令兜底**：下文的 `/openspec-apply-change`、`/openspec-archive-change` 均为 OpenSpec **skill 名**。若调用返回 `Unknown skill`，立即改用等价的 `/opsx:apply`、`/opsx:archive` 继续，不得中断流程或声称失败。
+
 首先确认此变更符合 openspec/config.yaml 中 quick_change_criteria 定义的全部条件：
 改动范围 ≤ 3 个文件、不涉及新功能/架构/安全敏感逻辑、意图无歧义。
 
